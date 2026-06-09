@@ -1,10 +1,10 @@
-//! Colors and shared sizes for the OpenLogi UI.
+//! Colors and shared sizes for the NativeLogi UI.
 //!
 //! Two layers:
 //!
 //! - **Brand / status** colours are fixed `u32` constants. They're saturated
 //!   enough to read on both light and dark backgrounds, so they don't change
-//!   with the OS appearance (the OpenLogi accent blue, the connectivity dots).
+//!   with the OS appearance (the NativeLogi accent blue, the connectivity dots).
 //! - **Surface / text** colours flip with the appearance and live in
 //!   [`Palette`], chosen by [`palette`] from the active gpui-component theme
 //!   mode. The bespoke surfaces (window, cards, mouse model)
@@ -61,7 +61,7 @@ pub struct Palette {
 }
 
 impl Palette {
-    /// The dark palette — the original OpenLogi look, unchanged.
+    /// The dark palette — the original NativeLogi look, unchanged.
     #[must_use]
     pub fn dark() -> Self {
         Self {

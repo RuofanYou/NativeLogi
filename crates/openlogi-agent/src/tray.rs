@@ -2,10 +2,10 @@
 //!
 //! The always-on agent hosts the menu bar (the GUI is on-demand). The item
 //! carries GUI-directed actions ("Show Main Window", Settings, About, Check for
-//! Updates) and "Quit OpenLogi"; the GitHub/help links live in the GUI's own
+//! Updates) and "Quit NativeLogi"; the GitHub/help links live in the GUI's own
 //! menu bar, not here. Clicks fire on the main thread's AppKit run loop.
 //!
-//! GUI-directed actions open [`DeeplinkCommand`] `openlogi://` URLs which macOS
+//! GUI-directed actions open [`DeeplinkCommand`] `nativelogi://` URLs which macOS
 //! delivers to the GUI via Apple Events — works for both cold start (app
 //! launched then URL delivered) and warm reactivation (URL delivered to the
 //! running app).
@@ -33,12 +33,12 @@ define_class!(
     // not implement `Drop`.
     #[unsafe(super(NSObject))]
     #[thread_kind = MainThreadOnly]
-    #[name = "OpenLogiAgentMenuTarget"]
+    #[name = "NativeLogiAgentMenuTarget"]
     struct MenuTarget;
 
     impl MenuTarget {
-        #[unsafe(method(openOpenLogi:))]
-        fn open_openlogi(&self, _sender: Option<&AnyObject>) {
+        #[unsafe(method(openNativeLogi:))]
+        fn open_nativelogi(&self, _sender: Option<&AnyObject>) {
             open_command(DeeplinkCommand::Show);
         }
 
@@ -57,8 +57,8 @@ define_class!(
             open_command(DeeplinkCommand::CheckForUpdates);
         }
 
-        #[unsafe(method(quitOpenLogi:))]
-        fn quit_openlogi(&self, _sender: Option<&AnyObject>) {
+        #[unsafe(method(quitNativeLogi:))]
+        fn quit_nativelogi(&self, _sender: Option<&AnyObject>) {
             // Tell a *running* GUI to quit too, but don't let `open` cold-launch
             // one just to immediately quit it (it would flash a window — and on
             // first run the update-consent prompt — before exiting). The gate
@@ -92,18 +92,21 @@ fn open_url(url: &str) {
     }
 }
 
-/// Route a GUI-directed [`DeeplinkCommand`] through the `openlogi://` scheme.
+/// Route a GUI-directed [`DeeplinkCommand`] through the `nativelogi://` scheme.
 /// macOS launches the GUI (cold start) or hands the URL to the running app.
 fn open_command(command: DeeplinkCommand) {
     open_url(&command.to_url());
 }
 
-/// Whether an OpenLogi GUI process is currently running (prod or dev bundle).
+/// Whether a NativeLogi GUI process is currently running (prod or dev bundle).
 /// Used to avoid cold-launching the GUI from the Quit handler just to quit it.
 fn gui_is_running() -> bool {
     // The release bundle id and the dev bundle's `.dev` suffix; the agent's own
-    // id is `org.openlogi.agent`, so neither matches the agent itself.
-    const GUI_BUNDLE_IDS: [&str; 2] = ["org.openlogi.openlogi", "org.openlogi.openlogi.dev"];
+    // id is `io.github.ruofanyou.nativelogi.agent`, so neither matches the agent itself.
+    const GUI_BUNDLE_IDS: [&str; 2] = [
+        "io.github.ruofanyou.nativelogi",
+        "io.github.ruofanyou.nativelogi.dev",
+    ];
     GUI_BUNDLE_IDS.iter().any(|id| {
         let running =
             NSRunningApplication::runningApplicationsWithBundleIdentifier(&NSString::from_str(id));
@@ -154,19 +157,20 @@ fn install_status_item(
         &status_item,
         mtm,
         include_bytes!("../assets/tray-icon@2x.png"),
-        "OpenLogi",
+        "NativeLogi",
     );
     let menu = status_item::new_menu(mtm);
 
     let show =
-        status_item::new_action_item(mtm, "Show Main Window", sel!(openOpenLogi:), &target, "m");
+        status_item::new_action_item(mtm, "Show Main Window", sel!(openNativeLogi:), &target, "m");
     menu.addItem(&show);
     status_item::add_separator(&menu, mtm);
 
     let settings =
         status_item::new_action_item(mtm, "Settings…", sel!(openSettings:), &target, ",");
     menu.addItem(&settings);
-    let about = status_item::new_action_item(mtm, "About OpenLogi", sel!(openAbout:), &target, "");
+    let about =
+        status_item::new_action_item(mtm, "About NativeLogi", sel!(openAbout:), &target, "");
     menu.addItem(&about);
     let updates = status_item::new_action_item(
         mtm,
@@ -179,7 +183,7 @@ fn install_status_item(
     status_item::add_separator(&menu, mtm);
 
     let quit =
-        status_item::new_action_item(mtm, "Quit OpenLogi", sel!(quitOpenLogi:), &target, "q");
+        status_item::new_action_item(mtm, "Quit NativeLogi", sel!(quitNativeLogi:), &target, "q");
     if let Some(image) = NSImage::imageWithSystemSymbolName_accessibilityDescription(
         &NSString::from_str("xmark.square"),
         Some(&NSString::from_str("Quit")),

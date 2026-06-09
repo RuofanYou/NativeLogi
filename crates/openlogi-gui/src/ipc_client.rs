@@ -198,7 +198,7 @@ fn spawn_agent() {
 }
 
 /// Resolve the agent executable relative to the running GUI: a sibling in the
-/// cargo target dir (dev), else the embedded `OpenLogiAgent.app` login-item
+/// cargo target dir (dev), else the embedded `NativeLogiAgent.app` login-item
 /// helper (packaged build).
 fn agent_binary_path() -> Option<PathBuf> {
     let exe = std::env::current_exe().ok()?;
@@ -207,11 +207,11 @@ fn agent_binary_path() -> Option<PathBuf> {
     if sibling.exists() {
         return Some(sibling);
     }
-    // Packaged: …/OpenLogi.app/Contents/MacOS/openlogi-gui → the helper at
-    // …/OpenLogi.app/Contents/Library/LoginItems/OpenLogiAgent.app/Contents/MacOS/openlogi-agent
+    // Packaged: …/NativeLogi.app/Contents/MacOS/openlogi-gui → the helper at
+    // …/NativeLogi.app/Contents/Library/LoginItems/NativeLogiAgent.app/Contents/MacOS/openlogi-agent
     let helper = dir
         .parent()?
-        .join("Library/LoginItems/OpenLogiAgent.app/Contents/MacOS/openlogi-agent");
+        .join("Library/LoginItems/NativeLogiAgent.app/Contents/MacOS/openlogi-agent");
     helper.exists().then_some(helper)
 }
 

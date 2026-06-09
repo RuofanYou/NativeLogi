@@ -14,21 +14,17 @@ use crate::util::{
 #[derive(Parser)]
 pub(crate) struct DmgMacos {
     /// App bundle to package.
-    #[arg(long, default_value = "target/release/bundle/osx/OpenLogi.app")]
+    #[arg(long, default_value = "target/release/bundle/osx/NativeLogi.app")]
     app: PathBuf,
     /// Output DMG path.
-    #[arg(long, default_value = "target/release/OpenLogi.dmg")]
+    #[arg(long, default_value = "target/release/NativeLogi.dmg")]
     output: PathBuf,
     /// Developer ID identity used to sign the DMG, and the app when packaging.
-    #[arg(long, env = "OPENLOGI_SIGN_IDENTITY")]
+    #[arg(long, env = "NATIVELOGI_SIGN_IDENTITY")]
     sign_identity: Option<String>,
-    /// Branded DMG background URL.
-    #[arg(
-        long,
-        env = "OPENLOGI_DMG_BACKGROUND_URL",
-        default_value = "https://assets.openlogi.org/dmg/dmg-background.tiff"
-    )]
-    background_url: String,
+    /// Optional branded DMG background URL.
+    #[arg(long, env = "NATIVELOGI_DMG_BACKGROUND_URL")]
+    background_url: Option<String>,
 }
 
 pub(crate) fn package_macos(args: &DmgMacos) -> Result<()> {
@@ -36,14 +32,14 @@ pub(crate) fn package_macos(args: &DmgMacos) -> Result<()> {
     if let Some(identity) = &args.sign_identity {
         sign_app(identity)?;
     } else {
-        println!("==> codesign: skipped (unsigned — set OPENLOGI_SIGN_IDENTITY to sign)");
+        println!("==> codesign: skipped (unsigned — set NATIVELOGI_SIGN_IDENTITY to sign)");
     }
     dmg_macos(args)
 }
 
 pub(crate) fn generate_macos_icns() -> Result<()> {
     let root = repo_root()?;
-    let master = root.join("design/icon/openlogi.png");
+    let master = root.join("assets/brand/nativelogi-icon.png");
     let output_dir = root.join("crates/openlogi-gui/icon");
     let output = output_dir.join("AppIcon.icns");
 
@@ -55,7 +51,7 @@ pub(crate) fn generate_macos_icns() -> Result<()> {
         )
     })?;
 
-    let work = TempDir::new("openlogi-icns")?;
+    let work = TempDir::new("nativelogi-icns")?;
     let iconset = work.path().join("AppIcon.iconset");
     fs::create_dir_all(&iconset)
         .with_context(|| format!("could not create iconset directory {}", iconset.display()))?;
@@ -105,7 +101,9 @@ pub(crate) fn bundle_macos() -> Result<()> {
     println!("==> app icon");
     generate_macos_icns()?;
 
-    if env::var("OPENLOGI_BUNDLE_ASSETS").as_deref() == Ok("1") {
+    if env::var("OPENLOGI_BUNDLE_ASSETS").as_deref() == Ok("1")
+        || env::var("NATIVELOGI_BUNDLE_ASSETS").as_deref() == Ok("1")
+    {
         println!("==> device assets: bundling (offline build)");
         run(with_env(
             ProcessCommand::new("cargo")
@@ -123,8 +121,8 @@ pub(crate) fn bundle_macos() -> Result<()> {
         println!("==> device assets: on-demand (not bundled; fetched at first launch)");
         let assets = root.join("crates/openlogi-gui/assets");
         if assets.exists() {
-            fs::remove_dir_all(&assets)
-                .with_context(|| format!("could not remove {}", assets.display()))?;
+            move_to_trash(&assets)
+                .with_context(|| format!("could not move {} to Trash", assets.display()))?;
         }
         fs::create_dir_all(&assets)
             .with_context(|| format!("could not create {}", assets.display()))?;
@@ -148,7 +146,7 @@ pub(crate) fn bundle_macos() -> Result<()> {
         &xcode_env,
     ))?;
 
-    let app = root.join("target/release/bundle/osx/OpenLogi.app");
+    let app = root.join("target/release/bundle/osx/NativeLogi.app");
     ensure_dir(&app)?;
     embed_agent_helper(&root, &app, &xcode_env)?;
     println!();
@@ -157,7 +155,7 @@ pub(crate) fn bundle_macos() -> Result<()> {
 }
 
 /// Build the headless agent and embed it as a nested login-item helper at
-/// `OpenLogi.app/Contents/Library/LoginItems/OpenLogiAgent.app`. The agent is
+/// `NativeLogi.app/Contents/Library/LoginItems/NativeLogiAgent.app`. The agent is
 /// the always-on process (hook + device I/O + menu bar); shipping it inside the
 /// GUI bundle keeps one notarized artifact, lets `open -b` foreground the GUI
 /// from the agent's menu, and gives the agent a stable signed identity so its
@@ -176,7 +174,7 @@ fn embed_agent_helper(root: &Path, app: &Path, xcode_env: &[(String, String)]) -
     let agent_bin = root.join("target/release/openlogi-agent");
     ensure_file(&agent_bin)?;
 
-    let helper = app.join("Contents/Library/LoginItems/OpenLogiAgent.app");
+    let helper = app.join("Contents/Library/LoginItems/NativeLogiAgent.app");
     let helper_macos = helper.join("Contents/MacOS");
     fs::create_dir_all(&helper_macos)
         .with_context(|| format!("could not create {}", helper_macos.display()))?;
@@ -214,38 +212,37 @@ pub(crate) fn dmg_macos(args: &DmgMacos) -> Result<()> {
     ensure_dir(&app)?;
     ensure_command("create-dmg")?;
 
-    println!("==> dmg background");
-    let background = root.join("target/release/dmg-background.tiff");
-    if let Some(parent) = background.parent() {
-        fs::create_dir_all(parent)
-            .with_context(|| format!("could not create {}", parent.display()))?;
-    }
-    run(ProcessCommand::new("curl")
-        .arg("-fsSL")
-        .arg(&args.background_url)
-        .arg("-o")
-        .arg(&background))
-    .with_context(|| {
-        format!(
-            "failed to fetch DMG background from {}",
-            args.background_url
-        )
-    })?;
+    let background = if let Some(background_url) = &args.background_url {
+        println!("==> dmg background");
+        let background = root.join("target/release/dmg-background.tiff");
+        if let Some(parent) = background.parent() {
+            fs::create_dir_all(parent)
+                .with_context(|| format!("could not create {}", parent.display()))?;
+        }
+        run(ProcessCommand::new("curl")
+            .arg("-fsSL")
+            .arg(background_url)
+            .arg("-o")
+            .arg(&background))
+        .with_context(|| format!("failed to fetch DMG background from {background_url}"))?;
+        Some(background)
+    } else {
+        None
+    };
 
     println!("==> dmg");
     if output.exists() {
-        fs::remove_file(&output)
-            .with_context(|| format!("could not remove {}", output.display()))?;
+        move_to_trash(&output)
+            .with_context(|| format!("could not move {} to Trash", output.display()))?;
     }
 
     // Geometry is locked to the painted 760×480 background. `create-dmg` uses
     // outer window dimensions, so add the 32pt Finder title bar and keep icon
     // coordinates relative to the 760×480 content area.
-    run(ProcessCommand::new("create-dmg")
+    let mut create_dmg = ProcessCommand::new("create-dmg");
+    create_dmg
         .arg("--volname")
-        .arg("OpenLogi")
-        .arg("--background")
-        .arg(&background)
+        .arg("NativeLogi")
         .arg("--window-pos")
         .arg("240")
         .arg("120")
@@ -253,18 +250,23 @@ pub(crate) fn dmg_macos(args: &DmgMacos) -> Result<()> {
         .arg("760")
         .arg("512")
         .arg("--icon-size")
-        .arg("128")
+        .arg("128");
+    if let Some(background) = &background {
+        create_dmg.arg("--background").arg(background);
+    }
+    create_dmg
         .arg("--icon")
-        .arg("OpenLogi.app")
+        .arg("NativeLogi.app")
         .arg("212")
         .arg("250")
         .arg("--app-drop-link")
         .arg("548")
         .arg("250")
         .arg("--hide-extension")
-        .arg("OpenLogi.app")
+        .arg("NativeLogi.app")
         .arg(&output)
-        .arg(&app))?;
+        .arg(&app);
+    run(&mut create_dmg)?;
 
     if let Some(identity) = &args.sign_identity {
         sign_dmg(identity, &output)?;
@@ -276,8 +278,8 @@ pub(crate) fn dmg_macos(args: &DmgMacos) -> Result<()> {
 }
 
 fn sign_app(identity: &str) -> Result<()> {
-    let app = repo_root()?.join("target/release/bundle/osx/OpenLogi.app");
-    let helper = app.join("Contents/Library/LoginItems/OpenLogiAgent.app");
+    let app = repo_root()?.join("target/release/bundle/osx/NativeLogi.app");
+    let helper = app.join("Contents/Library/LoginItems/NativeLogiAgent.app");
     println!("==> codesign ({identity})");
     // Inside-out signing: seal the nested helper with its own signature first,
     // then the outer app (which seals the already-signed helper). `--deep` is
@@ -299,6 +301,29 @@ fn sign_app(identity: &str) -> Result<()> {
             .arg(&helper))?;
     }
     Ok(())
+}
+
+fn move_to_trash(path: &Path) -> Result<()> {
+    let home = env::var("HOME").context("HOME is not set")?;
+    let trash = PathBuf::from(home).join(".Trash");
+    fs::create_dir_all(&trash)
+        .with_context(|| format!("could not create Trash directory {}", trash.display()))?;
+    let name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("NativeLogi-item");
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .unwrap_or(0);
+    let destination = trash.join(format!("NativeLogi-{timestamp}-{name}"));
+    fs::rename(path, &destination).with_context(|| {
+        format!(
+            "could not move {} to {}",
+            path.display(),
+            destination.display()
+        )
+    })
 }
 
 /// Sign one bundle with the hardened runtime + a secure timestamp.

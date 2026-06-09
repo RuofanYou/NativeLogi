@@ -1,152 +1,100 @@
-> [!WARNING]
-> **OpenLogi is under active development** and not yet stable — features and config may still change. Give the repo a **Star** ⭐ and **Watch** 👀 it to get notified the moment a release lands.
+# NativeLogi
 
-<h4 align="right"><strong>English</strong> | <a href="docs/README.zh-CN.md">简体中文</a> | <a href="docs/README.ja.md">日本語</a> | <a href="docs/README.de.md">Deutsch</a> | <a href="docs/README.fr.md">Français</a> | <a href="docs/README.ko.md">한국어</a></h4>
+NativeLogi is an independent, open-source macOS utility for Logitech mice.
+It is built for people who want native device control without running the heavy
+Logi Options+ background stack.
 
-<p align="center">
-    <img src="https://assets.openlogi.org/brand/openlogi-icon.png" width="138" alt="OpenLogi"/>
-</p>
+![NativeLogi icon](assets/brand/nativelogi-icon.png)
 
-<h1 align="center">OpenLogi</h1>
-<p align="center"><strong>⚡️ A native, local-first alternative to Logitech Options+, written in Rust 🦀<br/>Remap buttons, DPI, and SmartShift over HID++. No account, no telemetry.</strong></p>
+## Why
 
+Logi Options+ can intercept Logitech mouse buttons and turn physical side
+buttons into app-level back/forward actions. That is fine in browsers, but it
+breaks games and tools that expect real Mouse4 / Mouse5 input.
 
-<div align="center">
-    <a href="https://twitter.com/AprilNEA" target="_blank">
-    <img alt="twitter" src="https://img.shields.io/badge/follow-AprilNEA-green?style=social&logo=Twitter"></a>
-    <a href="https://t.me/+VDtkR5OSAT04NzVh" target="_blank">
-    <img alt="telegram" src="https://img.shields.io/badge/chat-telegram-blueviolet?style=flat&logo=Telegram"></a>
-    <a href="https://github.com/AprilNEA/OpenLogi/releases" target="_blank">
-    <img alt="GitHub downloads" src="https://img.shields.io/github/downloads/AprilNEA/OpenLogi/total.svg?style=flat"></a>
-    <a href="https://github.com/AprilNEA/OpenLogi/commits" target="_blank">
-    <img alt="GitHub commit" src="https://img.shields.io/github/commit-activity/m/AprilNEA/OpenLogi?style=flat"></a>
-    <img alt="Hits" src="https://hits.aprilnea.com/hits?url=https://github.com/aprilnea/openlogi">
-</div>
+NativeLogi starts by restoring native side-button behavior for MX Master-style
+mice, then grows into a lightweight local control panel for DPI, SmartShift,
+button bindings, and per-app profiles.
 
-> **Options+ ? Try OpenLogi.**
+## Current Highlights
 
-Remap buttons, drive DPI and SmartShift, and switch profiles per app — without a Logitech account, telemetry, or the official Options+ install. No cloud, plain TOML config; the only network calls are device-image fetches and an opt-in, off-by-default update check.
+- Native Mouse4 / Mouse5 pass-through for Logitech side buttons on macOS.
+- DPI controls over HID++.
+- SmartShift / wheel controls where supported by the device.
+- Local configuration, no account requirement, no telemetry.
+- Works with Bluetooth-direct devices and supported Logi Bolt paths.
 
----
+## Project Status
 
-## What it is
+NativeLogi is an early fork based on OpenLogi. The first public goal is a stable
+macOS build for Logitech MX Master users who want native side buttons and basic
+device controls without Logi Options+.
 
-OpenLogi talks to Logitech HID++ mice over a Logi Bolt receiver — or a
-Bluetooth-direct / wired connection — without running Logi Options+. It ships
-two binaries:
+The codebase still uses OpenLogi crate names internally. The public product
+name, app packaging, icon, and documentation are being migrated gradually so the
+working HID++ implementation stays stable.
 
-- **[OpenLogi GUI](crates/openlogi-gui)** — a GPUI desktop app: an interactive mouse diagram with clickable hotspots, a per-button action picker (39 built-in actions plus recorded custom shortcuts), DPI presets, a SmartShift panel (wheel mode, sensitivity, permanent ratchet), per-application profile overlays, a device carousel that switches between paired devices live, and a Settings window with a UI localized into six languages.
-- **[OpenLogi CLI](crates/openlogi-cli)** — a CLI for headless inventory (`list`) plus asset-sync and on-device diagnostic subcommands.
+## Build From Source
 
-Everything is local: bindings live in a plain TOML file, button presses are remapped through the OS event tap, and DPI / SmartShift changes are written straight to the device over HID++.
+There is no signed public release yet.
 
-macOS is supported today; Linux and Windows are coming soon — see
-[Roadmap](#roadmap).
+For now, build from source:
+
+```sh
+cargo build -p openlogi-agent -p openlogi-gui --release
+```
+
+The current development binaries are:
+
+```text
+target/release/openlogi-gui
+target/release/openlogi-agent
+```
+
+The internal crate and binary names still use `openlogi` while the public app
+brand is being migrated to NativeLogi.
+
+## macOS Permissions
+
+NativeLogi needs two macOS permissions:
+
+- **Accessibility**: required for the mouse event tap and button remapping.
+- **Input Monitoring**: required to open HID devices, especially
+  Bluetooth-direct Logitech mice.
+
+If the app is rebuilt or re-signed locally, macOS may treat it as a new app and
+require the permissions to be granted again.
 
 ## Roadmap
 
-| Capability | State |
-|---|---|
-| Discover Bolt receivers + list paired devices (CLI + GUI) | ✅ |
-| Bluetooth-direct / wired devices (no receiver) | ✅ |
-| Battery percentage / charge state | ✅ (online devices) |
-| Interactive GUI: carousel, mouse diagram, action picker | ✅ macOS |
-| Button remapping via the OS event tap (side Back / Forward today) | ✅ macOS |
-| 39-action catalog + recorded custom keyboard shortcuts | ✅ macOS¹ |
-| DPI control + presets + Cycle / Set-preset actions (HID++ `0x2201`) | ✅ macOS |
-| SmartShift wheel: mode toggle + sensitivity + permanent-ratchet panel (HID++ `0x2111`) | ✅ macOS |
-| Per-application profile overlays (auto-switch on app focus) | ✅ macOS |
-| Settings window: launch-at-login, update check, menu-bar, permissions, language | ✅ macOS |
-| Interface localization (6 languages: en, ja, ru, zh-CN, zh-HK, zh-TW) | ✅ macOS |
-| Gesture-button per-direction bindings | 🟡 configurable; hardware capture pending |
-| Middle / mode-shift / thumbwheel button capture | 🟡 configurable; hook owns side buttons only |
-| Linux / Windows event hook | ❌ stub (`Unsupported`) |
-| Unifying receivers | ❌ (not yet supported) |
+- Package a NativeLogi-branded `.app`.
+- Replace the remaining OpenLogi app names and bundle identifiers.
+- Add a reproducible release workflow.
+- Add a first public DMG / ZIP release.
+- Improve game-profile ergonomics for native side-button use.
 
-¹ A few actions (e.g. the media keys) currently log their intended event rather than posting it — tracked as a follow-up.
+## Credits
 
-## Install
+NativeLogi is based on [OpenLogi](https://github.com/AprilNEA/OpenLogi), which
+is dual-licensed under MIT or Apache-2.0.
 
-> [!IMPORTANT]
-> Quit **Logi Options+** first — the two applications fight over HID++ access and only one can own a given receiver at a time.
+Thanks to the OpenLogi project and its upstream dependencies, including HID++
+work inspired by projects such as Solaar and Mouser.
 
-Download the signed, notarized `.dmg` from the [latest release](https://github.com/AprilNEA/OpenLogi/releases/latest) and drag `OpenLogi.app` to `/Applications`.
+## Trademark Notice
 
-Or install via [Homebrew](https://brew.sh):
+NativeLogi is an independent open-source project and is not affiliated with,
+endorsed by, or sponsored by Logitech.
 
-```sh
-brew install --cask openlogi
-```
-
-The official Homebrew cask is the default installation path. To explicitly
-track the latest GitHub release from `aprilnea/tap` instead:
-
-```sh
-brew tap aprilnea/tap
-brew install --cask aprilnea/tap/openlogi@latest
-```
-
-`openlogi@latest` is maintained by OpenLogi's release workflow and may update
-before the official cask autobump lands. Install either `openlogi` or
-`openlogi@latest`, not both.
-
-To build from source, see [DEVELOPMENT.md](docs/DEVELOPMENT.md).
-
-### Linux device permissions (preview)
-
-The CLI/device layer builds and runs on Linux today (`cargo build -p openlogi`;
-needs `libudev-dev` + `pkg-config`). By default every `hidraw` node is
-`root:root 0600`, so without a udev rule the tools fail with
-`PermissionDenied (os error 13)`.
-
-Install the bundled rule, which covers both transports — Bolt receiver (USB) and
-Bluetooth-direct (which hangs off `uhid` and exposes no USB `idVendor`, so it is
-matched by its HID id `0005:046D:*`):
-
-```sh
-sudo cp udev/70-openlogi.rules /etc/udev/rules.d/
-sudo udevadm control --reload-rules && sudo udevadm trigger
-# then power-cycle the device (or replug the receiver) so the ACL is applied
-```
-
-It uses systemd `uaccess` (group-free, works under X11 and Wayland/GNOME). After
-applying it, `openlogi list` runs without `sudo`.
-
-## Usage (CLI)
-
-See [USAGE.md](docs/USAGE.md)
-
-## Configuration
-
-See [CONFIGURATION.md](docs/CONFIGURATION.md)
-
-## Developing
-
-See [DEVELOPMENT.md](docs/DEVELOPMENT.md)
-
-## Acknowledgments
-
-- [`hidpp`](https://crates.io/crates/hidpp) by [@lus](https://github.com/lus)
-- [Solaar](https://github.com/pwr-Solaar/Solaar)
-- [Mouser](https://github.com/TomBadash/Mouser) by Tom Badash
+Logitech, Logi, Logi Options+, MX Master, and related marks are trademarks or
+registered trademarks of Logitech Europe S.A. and/or its affiliates.
 
 ## License
 
-Dual-licensed under either of
+The source code remains dual-licensed under either:
 
 - Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
-- MIT license ([LICENSE-MIT](LICENSE-MIT))
+- MIT License ([LICENSE-MIT](LICENSE-MIT))
 
-at your option.
-
-### Logo & brand assets
-
-The OpenLogi logo and app icon — the brand assets under [`design/`](design/) —
-are © 2026 AprilNEA, all rights reserved, and are not covered by the MIT/Apache
-licenses above; see [`design/LICENSE`](design/LICENSE). Forking the code grants
-no right to the OpenLogi name, logo, or icon; please don't use them to represent
-your own projects, forks, or distributions without prior written permission.
-
----
-
-**Not affiliated with Logitech.** "Logitech", "MX Master", and "Options+" are trademarks of Logitech International S.A.
+The NativeLogi brand assets under `assets/brand/` are separate project branding
+assets and are not Logitech brand assets.

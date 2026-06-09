@@ -45,7 +45,7 @@ impl AuxWindow for UpdateConsentView {
 pub fn open(cx: &mut App) {
     windows::open_or_focus(
         |reg| &mut reg.update_consent,
-        "OpenLogi",
+        "NativeLogi",
         Size::new(px(380.), px(220.)),
         UpdateConsentView::new,
         cx,
@@ -91,7 +91,7 @@ impl Render for UpdateConsentView {
                     .text_center()
                     .text_color(pal.text_muted)
                     .child(tr!(
-                        "OpenLogi can check GitHub once per launch for a new version — query \
+                        "NativeLogi can check once per launch for a new version — query \
                          only, no automatic download or telemetry. You can change this anytime \
                          in Settings."
                     )),

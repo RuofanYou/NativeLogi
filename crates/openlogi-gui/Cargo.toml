@@ -6,7 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
-description = "GPUI-based desktop UI for OpenLogi."
+description = "GPUI-based desktop UI for NativeLogi."
 # Not publishable to crates.io: depends on git-only gpui / gpui_platform
 # (gpui_platform is not on the registry). Distributed as a bundled .app.
 publish = false
@@ -57,20 +57,20 @@ missing_errors_doc = "allow"
 doc_markdown = "allow"
 
 [package.metadata.bundle]
-name = "OpenLogi"
-identifier = "org.openlogi.openlogi"
+name = "NativeLogi"
+identifier = "io.github.ruofanyou.nativelogi"
 version = "0.1.0"
 category = "public.app-category.utilities"
 short_description = "Lightweight local-first companion for Logitech HID++ peripherals."
 long_description = """\
-OpenLogi talks to Logitech HID++ mice and keyboards directly — no \
+NativeLogi talks to Logitech HID++ mice directly — no \
 cloud account, no telemetry, no auto-update poller. Plain TOML config, \
 single binary; device renders are fetched on demand on first launch.
 """
 osx_minimum_system_version = "13.0"
 # Deep-link scheme for the release app. The dev build is hand-bundled, so its
 # dev/Info.plist declares the same scheme separately — keep the two in sync.
-osx_url_schemes = ["openlogi"]
+osx_url_schemes = ["nativelogi"]
 icon = ["icon/AppIcon.icns"]
 resources = ["assets/**/*"]
 

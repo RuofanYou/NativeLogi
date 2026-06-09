@@ -8,7 +8,7 @@ use macos::DmgMacos;
 use manifest::GenerateUpdaterManifest;
 
 #[derive(Parser)]
-#[command(about = "OpenLogi repository maintenance tasks")]
+#[command(about = "NativeLogi repository maintenance tasks")]
 struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -20,7 +20,7 @@ enum Command {
     GenerateUpdaterManifest(GenerateUpdaterManifest),
     /// Generate the macOS app icon from the master PNG.
     MacosIcns,
-    /// Build the release OpenLogi.app bundle.
+    /// Build the release NativeLogi.app bundle.
     BundleMacos,
     /// Create the branded macOS DMG from an existing app bundle.
     DmgMacos(DmgMacos),

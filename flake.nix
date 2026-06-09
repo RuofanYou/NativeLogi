@@ -1,5 +1,5 @@
 {
-  description = "OpenLogi — local-first alternative to Logitech Options+ for HID++ devices";
+  description = "NativeLogi — native macOS control for Logitech mice without Logi Options+";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
@@ -16,8 +16,8 @@
     in
     {
       packages = forAllSystems (system: {
-        openlogi = nixpkgs.legacyPackages.${system}.callPackage ./nix/package.nix { };
-        default = self.packages.${system}.openlogi;
+        nativelogi = nixpkgs.legacyPackages.${system}.callPackage ./nix/package.nix { };
+        default = self.packages.${system}.nativelogi;
       });
     };
 }

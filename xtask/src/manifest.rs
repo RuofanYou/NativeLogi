@@ -9,7 +9,7 @@ use serde::Serialize;
 use sha2::{Digest as _, Sha256};
 use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 
-const APP_ID: &str = "org.openlogi.openlogi";
+const APP_ID: &str = "io.github.ruofanyou.nativelogi";
 const CHANNEL: &str = "stable";
 const MINIMUM_OS_VERSION: &str = "13.0";
 
@@ -24,7 +24,7 @@ pub(crate) struct GenerateUpdaterManifest {
     /// Release tag, for example `v0.2.0`.
     #[arg(long, env = "GITHUB_REF_NAME")]
     tag: String,
-    /// Public update base URL, for example `https://updates.openlogi.org`.
+    /// Public update base URL, for example `https://updates.nativelogi.dev`.
     #[arg(long, env = "OPENLOGI_UPDATE_BASE_URL")]
     base_url: String,
 }
@@ -75,7 +75,7 @@ pub(crate) fn generate_updater_manifest(args: &GenerateUpdaterManifest) -> Resul
         channel: CHANNEL,
         published_at: published_at()?,
         release_url: format!(
-            "https://github.com/AprilNEA/OpenLogi/releases/tag/{}",
+            "https://github.com/RuofanYou/NativeLogi/releases/tag/{}",
             args.tag
         ),
         assets,
@@ -173,7 +173,8 @@ mod tests {
     use super::*;
 
     fn temp_dist(name: &str) -> PathBuf {
-        let path = env::temp_dir().join(format!("openlogi-manifest-test-{}-{name}", process::id()));
+        let path =
+            env::temp_dir().join(format!("nativelogi-manifest-test-{}-{name}", process::id()));
         let _ = fs::remove_dir_all(&path);
         fs::create_dir_all(&path).unwrap();
         path
@@ -182,7 +183,7 @@ mod tests {
     #[test]
     fn collect_assets_requires_minisign_signature_for_each_dmg() {
         let dist = temp_dist("missing-signature");
-        fs::write(dist.join("OpenLogi-v1.2.3-macos-arm64.dmg"), b"dmg").unwrap();
+        fs::write(dist.join("NativeLogi-v1.2.3-macos-arm64.dmg"), b"dmg").unwrap();
 
         assert!(collect_assets(&dist, "https://updates.example/releases/v1.2.3").is_err());
 
@@ -192,9 +193,9 @@ mod tests {
     #[test]
     fn collect_assets_publishes_signature_url() {
         let dist = temp_dist("with-signature");
-        fs::write(dist.join("OpenLogi-v1.2.3-macos-arm64.dmg"), b"dmg").unwrap();
+        fs::write(dist.join("NativeLogi-v1.2.3-macos-arm64.dmg"), b"dmg").unwrap();
         fs::write(
-            dist.join("OpenLogi-v1.2.3-macos-arm64.dmg.minisig"),
+            dist.join("NativeLogi-v1.2.3-macos-arm64.dmg.minisig"),
             b"signature",
         )
         .unwrap();
@@ -203,7 +204,7 @@ mod tests {
 
         assert_eq!(
             assets[0].signature_url,
-            "https://updates.example/releases/v1.2.3/OpenLogi-v1.2.3-macos-arm64.dmg.minisig"
+            "https://updates.example/releases/v1.2.3/NativeLogi-v1.2.3-macos-arm64.dmg.minisig"
         );
 
         let _ = fs::remove_dir_all(dist);

@@ -236,7 +236,7 @@ impl AppView {
                     .text_sm()
                     .text_color(pal.text_muted)
                     .child(tr!(
-                        "OpenLogi captures mouse buttons (Back / Forward / gesture button) \
+                        "NativeLogi captures mouse buttons (Back / Forward / gesture button) \
                          through the system Accessibility permission and runs the actions you \
                          bind. Features that talk to the device directly — DPI, SmartShift — \
                          are unaffected."
@@ -301,7 +301,7 @@ impl Render for AppView {
             .try_global::<AppState>()
             .is_none_or(|s| s.accessibility_granted);
         if !granted && !self.accessibility_dismissed {
-            window.set_window_title("OpenLogi");
+            window.set_window_title("NativeLogi");
             return Self::accessibility_gate(pal, cx);
         }
 
@@ -689,13 +689,13 @@ fn add_device_button(pal: Palette) -> impl IntoElement {
 
 fn main_window_title(show_device: bool, cx: &Context<AppView>) -> SharedString {
     if !show_device {
-        return SharedString::from("OpenLogi");
+        return SharedString::from("NativeLogi");
     }
     cx.try_global::<AppState>()
         .and_then(AppState::current_record)
         .map_or_else(
-            || SharedString::from("OpenLogi"),
-            |record| SharedString::from(format!("OpenLogi - {}", record.display_name)),
+            || SharedString::from("NativeLogi"),
+            |record| SharedString::from(format!("NativeLogi - {}", record.display_name)),
         )
 }
 

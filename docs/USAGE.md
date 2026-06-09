@@ -1,15 +1,19 @@
-# Usage (CLI)
+# Usage
 
-The `openlogi` command-line tool. For install and configuration, see the
-[README](../README.md).
+NativeLogi currently keeps the internal CLI binary name from OpenLogi:
 
 ```sh
-openlogi list                 # paired devices: slot, codename, kind, online, battery
-openlogi assets sync          # pre-fetch device renders from assets.openlogi.org
-openlogi diag features        # dump every HID++ feature the active device reports
-openlogi diag dpi             # read → write → read-back → restore DPI (smoke test)
-openlogi diag smartshift      # toggle SmartShift and restore (smoke test)
+openlogi list
+openlogi diag features
+openlogi diag dpi
+openlogi diag smartshift
 ```
 
-Running `openlogi` with no subcommand defaults to `list`. Set
-`OPENLOGI_LOG=debug` for verbose tracing on either binary.
+Run from source:
+
+```sh
+cargo run -p openlogi --release -- list
+```
+
+Set `OPENLOGI_LOG=debug` for verbose tracing while the internal binary names are
+still being migrated.

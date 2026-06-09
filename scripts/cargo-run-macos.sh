@@ -7,7 +7,7 @@
 # the desktop binary it's a transparent passthrough (`exec "$@"`).
 #
 # For `openlogi-gui` it launches the build from inside a throwaway
-# `OpenLogi.app` so macOS shows the real app name (the bold menu-bar title)
+# `NativeLogi.app` so macOS shows the real app name (the bold menu-bar title)
 # and the Dock icon during development. Both are read from the bundle's
 # `Info.plist` / `Resources` — a bare `target/debug/openlogi-gui` has neither,
 # so macOS falls back to the executable name and a generic icon.
@@ -23,7 +23,7 @@ if [ "${bin##*/}" != "openlogi-gui" ] || [ "${OPENLOGI_DEV_BUNDLE:-1}" = "0" ]; 
 fi
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-APP="$ROOT/target/dev/OpenLogi.app"
+APP="$ROOT/target/dev/NativeLogi.app"
 MACOS="$APP/Contents/MacOS"
 RES="$APP/Contents/Resources"
 ICON_SRC="$ROOT/crates/openlogi-gui/icon/AppIcon.icns"
@@ -55,7 +55,7 @@ fi
 # stale link. Fall back to a copy if the bundle ever lands on another volume.
 ln -f "$bin" "$MACOS/openlogi-gui" 2>/dev/null || cp -f "$bin" "$MACOS/openlogi-gui"
 
-# Register the dev .app with LaunchServices so the `openlogi://` URL scheme
+# Register the dev .app with LaunchServices so the `nativelogi://` URL scheme
 # works during development. Gate on the *bundled* plist (freshly stamped by the
 # copy step above) vs a marker, so a rebuilt bundle re-registers even when the
 # source plist is unchanged — and only stamp the marker when lsregister actually
@@ -63,7 +63,7 @@ ln -f "$bin" "$MACOS/openlogi-gui" 2>/dev/null || cp -f "$bin" "$MACOS/openlogi-
 # (normally ~10 ms, occasionally multi-second) lsregister cost on the steady
 # incremental path.
 #
-# Both the dev build (here) and the release build register the same openlogi://
+# Both the dev build (here) and the release build register the same nativelogi://
 # scheme; LaunchServices routes to the last-registered handler. If a release
 # install starts winning the scheme during development, re-run this (touch the
 # dev plist) or `lsregister -f "$APP"` to put the dev build back in front.
@@ -88,7 +88,7 @@ if [ "${OPENLOGI_DEV_AGENT:-1}" != "0" ]; then
   else
     cargo build -p openlogi-agent --manifest-path "$ROOT/Cargo.toml"
   fi
-  helper="$APP/Contents/Library/LoginItems/OpenLogiAgent.app"
+  helper="$APP/Contents/Library/LoginItems/NativeLogiAgent.app"
   mkdir -p "$helper/Contents/MacOS"
   ln -f "$agent_dir/openlogi-agent" "$helper/Contents/MacOS/openlogi-agent" 2>/dev/null \
     || cp -f "$agent_dir/openlogi-agent" "$helper/Contents/MacOS/openlogi-agent"

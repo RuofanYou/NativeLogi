@@ -1,6 +1,6 @@
-# Nix package for OpenLogi (the GUI .app), modeled on nixpkgs' zed-editor.
+# Nix package for NativeLogi (the GUI .app), modeled on nixpkgs' zed-editor.
 #
-# Build via the flake (`nix build .#openlogi`) or standalone:
+# Build via the flake (`nix build .#nativelogi`) or standalone:
 #   nix-build -E 'with import <nixpkgs> {}; callPackage ./nix/package.nix {}'
 #
 # For a nixpkgs submission, swap the local `src` for the fetchFromGitHub block
@@ -15,7 +15,7 @@
 }:
 
 rustPlatform.buildRustPackage (finalAttrs: {
-  pname = "openlogi";
+  pname = "nativelogi";
   version = "0.4.0";
 
   # Build from the working tree (target/.git/etc. filtered out). cargo-bundle
@@ -34,8 +34,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
   };
   # For nixpkgs, replace the local `src` above with a tagged tarball:
   #   src = fetchFromGitHub {
-  #     owner = "AprilNEA";
-  #     repo = "OpenLogi";
+  #     owner = "RuofanYou";
+  #     repo = "NativeLogi";
   #     tag = "v${finalAttrs.version}"; # a release that ships the committed .icns
   #     hash = lib.fakeHash;            # TODO
   #   };
@@ -49,7 +49,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
     # DEVELOPER_DIR for local macOS dev — neither exists in the Nix sandbox, so
     # linking would fail. Drop it; Nix's cc wrapper + runtime_shaders (below)
     # are what we want. (nixpkgs' zed-editor drops its config for the same reason.)
-    rm -f .cargo/config.toml
+    mv .cargo/config.toml .cargo/config.toml.disabled
 
     # gpui-component's IconName proc-macro reads `../assets/assets/icons`
     # relative to its own crate, assuming the upstream repo's workspace layout.
@@ -59,7 +59,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
   '';
 
   nativeBuildInputs = [
-    cargo-bundle # assembles OpenLogi.app from [package.metadata.bundle]
+    cargo-bundle # assembles NativeLogi.app from [package.metadata.bundle]
   ];
 
   # The GUI plus the headless agent (embedded below as a login-item helper). The
@@ -77,7 +77,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
   # gpui tests would hit the same Metal path; nothing here is worth running.
   doCheck = false;
 
-  # The in-app updater reads `option_env!("OPENLOGI_UPDATE_MANIFEST_URL")`;
+  # The in-app updater reads `option_env!("NATIVELOGI_UPDATE_MANIFEST_URL")`;
   # leaving it unset disables self-updates — correct for a Nix-managed install.
 
   installPhase = lib.optionalString stdenv.hostPlatform.isDarwin ''
@@ -95,7 +95,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
     # Embed the headless agent as a nested login-item helper. Mirrors xtask's
     # embed_agent_helper, since this install path runs `cargo bundle` directly
     # rather than `xtask bundle-macos`.
-    helper="$app_path/Contents/Library/LoginItems/OpenLogiAgent.app"
+    helper="$app_path/Contents/Library/LoginItems/NativeLogiAgent.app"
     mkdir -p "$helper/Contents/MacOS"
     cp "$release_target/openlogi-agent" "$helper/Contents/MacOS/openlogi-agent"
     cp crates/openlogi-agent/macos/Info.plist "$helper/Contents/Info.plist"
@@ -106,14 +106,14 @@ rustPlatform.buildRustPackage (finalAttrs: {
     runHook postInstall
   '';
 
-  # `nix-update openlogi` (and nixpkgs' autobump) bump the version and refetch
+  # `nix-update nativelogi` (and nixpkgs' autobump) bump the version and refetch
   # src.hash + cargoHash automatically — effective once `src` is the
   # fetchFromGitHub form above (a local `src` has no remote version to track).
   passthru.updateScript = nix-update-script { };
 
   meta = {
-    description = "Local-first alternative to Logitech Options+ for HID++ devices";
-    homepage = "https://openlogi.org/";
+    description = "Native macOS control for Logitech mice without Logi Options+";
+    homepage = "https://github.com/RuofanYou/NativeLogi";
     license = with lib.licenses; [
       mit
       asl20

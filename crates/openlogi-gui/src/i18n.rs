@@ -152,7 +152,7 @@ mod tests {
         use openlogi_core::binding::{Action, ButtonId, GestureDirection};
 
         // The accessibility blurb is the longest, most typo-prone key.
-        const BLURB: &str = "OpenLogi captures mouse buttons (Back / Forward / gesture button) through the system Accessibility permission and runs the actions you bind. Features that talk to the device directly — DPI, SmartShift — are unaffected.";
+        const BLURB: &str = "NativeLogi captures mouse buttons (Back / Forward / gesture button) through the system Accessibility permission and runs the actions you bind. Features that talk to the device directly — DPI, SmartShift — are unaffected.";
 
         rust_i18n::set_locale("zh-CN");
         assert_eq!(rust_i18n::t!("Settings"), "设置"); // GUI chrome
@@ -166,7 +166,7 @@ mod tests {
             rust_i18n::t!("DPI Preset %{index}", index => "2"),
             "灵敏度预设 2"
         ); // parameterized action label
-        assert_eq!(rust_i18n::t!("Quit OpenLogi"), "退出 OpenLogi"); // menu-bar status item
+        assert_eq!(rust_i18n::t!("Quit NativeLogi"), "退出 NativeLogi"); // menu-bar status item
         assert_eq!(rust_i18n::t!("No devices connected"), "未连接设备"); // menu-bar device line
         assert_eq!(rust_i18n::t!("Lighting"), "灯光"); // keyboard lighting tab
         assert_eq!(rust_i18n::t!("BRIGHTNESS"), "亮度"); // lighting panel label

@@ -11,7 +11,7 @@
 linker = "/usr/bin/cc"
 
 # Dev ergonomics: launch the desktop build from inside a throwaway
-# `OpenLogi.app` so macOS shows the real app name + Dock icon during
+# `NativeLogi.app` so macOS shows the real app name + Dock icon during
 # development (both are read from a bundle's Info.plist / Resources, which a
 # bare `cargo run` binary lacks). The runner is a transparent passthrough for
 # the CLI, tests, and every other binary — only `openlogi-gui` is wrapped.

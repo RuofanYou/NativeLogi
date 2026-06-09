@@ -13,14 +13,14 @@ use gpui::{App, AppContext as _, Entity, Global};
 use gpui_updater::{EngineConfig, StaticManifestSource, Updater, Verification, Version};
 use openlogi_core::config::AppSettings;
 
-const MANIFEST_URL: &str = match option_env!("OPENLOGI_UPDATE_MANIFEST_URL") {
+const MANIFEST_URL: &str = match option_env!("NATIVELOGI_UPDATE_MANIFEST_URL") {
     Some(url) => url,
-    None => "https://updates.openlogi.org/channels/stable/latest.json",
+    None => "https://updates.nativelogi.dev/channels/stable/latest.json",
 };
 
 /// Base64 minisign public key, embedded at build time by the release workflow.
 /// Absent in local/dev builds, which then fail closed (see [`new_entity`]).
-const MINISIGN_PUBLIC_KEY: Option<&str> = option_env!("OPENLOGI_UPDATE_MINISIGN_PUBLIC_KEY");
+const MINISIGN_PUBLIC_KEY: Option<&str> = option_env!("NATIVELOGI_UPDATE_MINISIGN_PUBLIC_KEY");
 
 /// App-global handle to the shared updater entity.
 #[derive(Clone)]

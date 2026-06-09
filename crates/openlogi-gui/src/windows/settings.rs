@@ -184,7 +184,7 @@ fn general_page(sensitivity_slider: Entity<SliderState>) -> SettingPage {
                 ),
             )
             .description(tr!(
-                "Automatically start OpenLogi when you log in to macOS."
+                "Automatically start NativeLogi when you log in to macOS."
             )),
         )
         .item(
@@ -226,7 +226,7 @@ fn general_page(sensitivity_slider: Entity<SliderState>) -> SettingPage {
             ),
         )
         .description(tr!(
-            "Keep OpenLogi's icon in the menu bar. When off, it stays in the Dock instead."
+            "Keep NativeLogi's icon in the menu bar. When off, it stays in the Dock instead."
         )),
     );
 
@@ -270,7 +270,7 @@ fn permissions_page(pal: Palette) -> SettingPage {
                 .item(permission_item(
                     "perm-bluetooth",
                     tr!("Bluetooth"),
-                    tr!("Allows OpenLogi to use CoreBluetooth (not required for HID access)."),
+                    tr!("Allows NativeLogi to use CoreBluetooth (not required for HID access)."),
                     Permission::Bluetooth,
                     |_| permissions::bluetooth(),
                     pal,

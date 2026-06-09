@@ -2,24 +2,24 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTD/PropertyList-1.0.dtd">
 <!--
   Info.plist for the nested login-item helper, assembled by `xtask` into
-  OpenLogi.app/Contents/Library/LoginItems/OpenLogiAgent.app.
+  NativeLogi.app/Contents/Library/LoginItems/NativeLogiAgent.app.
 
   LSUIElement=true makes the agent an Accessory app: a menu-bar status item with
   no Dock icon (the agent also sets NSApplicationActivationPolicy::Accessory at
-  runtime). A distinct CFBundleIdentifier (org.openlogi.agent) + a stable
+  runtime). A distinct CFBundleIdentifier (io.github.ruofanyou.nativelogi.agent) + a stable
   Developer-ID signature is what lets the Accessibility (TCC) grant persist
   across app updates — the agent, not the GUI, is the hook-trusted process.
 -->
 <plist version="1.0">
 <dict>
   <key>CFBundleName</key>
-  <string>OpenLogi Agent</string>
+  <string>NativeLogi Agent</string>
   <key>CFBundleDisplayName</key>
-  <string>OpenLogi Agent</string>
+  <string>NativeLogi Agent</string>
   <key>CFBundleExecutable</key>
   <string>openlogi-agent</string>
   <key>CFBundleIdentifier</key>
-  <string>org.openlogi.agent</string>
+  <string>io.github.ruofanyou.nativelogi.agent</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>

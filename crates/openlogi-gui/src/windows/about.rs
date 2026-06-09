@@ -126,7 +126,7 @@ impl AuxWindow for AboutView {
 pub fn open(cx: &mut App) {
     windows::open_or_focus(
         |reg| &mut reg.about,
-        "About OpenLogi",
+        "About NativeLogi",
         Size::new(px(360.), px(460.)),
         AboutView::new,
         cx,
@@ -153,7 +153,7 @@ impl Render for AboutView {
                 div()
                     .text_2xl()
                     .font_weight(FontWeight::BOLD)
-                    .child("OpenLogi"),
+                    .child("NativeLogi"),
             )
             .child(
                 div()

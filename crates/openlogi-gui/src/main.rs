@@ -1,4 +1,4 @@
-//! OpenLogi GPUI desktop window.
+//! NativeLogi GPUI desktop window.
 //!
 //! Initial HID++ inventory is collected synchronously on startup (GPUI owns
 //! the main thread, so we can't move it onto a tokio runtime). Live polling
@@ -106,7 +106,7 @@ fn main() -> Result<()> {
         Err(openlogi_core::single_instance::InstanceError::AlreadyRunning { path }) => {
             info!(
                 path = %path.display(),
-                "another OpenLogi instance is already running — exiting"
+                "another NativeLogi instance is already running — exiting"
             );
             return Ok(());
         }
@@ -144,7 +144,7 @@ fn main() -> Result<()> {
     // `Icon` would fail to load.
     let app = gpui_platform::application().with_assets(app_assets::AppAssets);
 
-    // URL scheme: `open openlogi://open-settings` from the agent's tray or
+    // URL scheme: `open nativelogi://open-settings` from the agent's tray or
     // external apps. Works for both cold start (macOS launches the app then
     // delivers the URL) and warm reactivation (delivered to the running app).
     let (gui_cmd_tx, mut gui_cmd_rx) = tokio::sync::mpsc::unbounded_channel::<DeeplinkCommand>();
@@ -155,7 +155,7 @@ fn main() -> Result<()> {
                 if let Some(cmd) = DeeplinkCommand::parse_url(url) {
                     let _ = tx.send(cmd);
                 } else {
-                    warn!(url, "unknown openlogi:// command — ignoring");
+                    warn!(url, "unknown nativelogi:// command — ignoring");
                 }
             }
         }
@@ -326,7 +326,7 @@ fn main_window_options(cx: &mut gpui::App) -> WindowOptions {
         window_bounds: Some(WindowBounds::Windowed(bounds)),
         window_min_size: Some(Size::new(px(720.), px(520.))),
         titlebar: Some(TitlebarOptions {
-            title: Some(SharedString::from("OpenLogi")),
+            title: Some(SharedString::from("NativeLogi")),
             appears_transparent: false,
             traffic_light_position: None,
         }),

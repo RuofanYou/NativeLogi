@@ -19,11 +19,11 @@ actions!(
     [
         /// Close the focused window.
         CloseWindow,
-        /// Bring all OpenLogi windows to the front.
+        /// Bring all NativeLogi windows to the front.
         BringAllToFront,
         /// Check for an application update.
         CheckForUpdates,
-        /// Hide the OpenLogi window (macOS).
+        /// Hide the NativeLogi window (macOS).
         Hide,
         /// Hide every other application (macOS).
         HideOthers,
@@ -33,13 +33,13 @@ actions!(
         OpenAbout,
         /// Open the Add Device (pairing) window.
         OpenAddDevice,
-        /// Open the user's OpenLogi configuration folder.
+        /// Open the user's NativeLogi configuration folder.
         OpenConfigFolder,
-        /// Open the OpenLogi help page.
+        /// Open the NativeLogi help page.
         OpenHelp,
         /// Open the latest release page.
         OpenLatestRelease,
-        /// Open the OpenLogi GitHub repository.
+        /// Open the NativeLogi GitHub repository.
         OpenRepository,
         /// Open the Settings window.
         OpenSettings,
@@ -123,10 +123,10 @@ fn menus(cx: &App) -> Vec<Menu> {
     vec![
         Menu {
             // The app menu's name is the product name, not a translatable string.
-            name: "OpenLogi".into(),
+            name: "NativeLogi".into(),
             disabled: false,
             items: vec![
-                MenuItem::action(tr!("About OpenLogi"), OpenAbout),
+                MenuItem::action(tr!("About NativeLogi"), OpenAbout),
                 MenuItem::action(tr!("Check for Updates…"), CheckForUpdates),
                 MenuItem::separator(),
                 MenuItem::action(tr!("Settings…"), OpenSettings),
@@ -137,14 +137,14 @@ fn menus(cx: &App) -> Vec<Menu> {
                 #[cfg(target_os = "macos")]
                 MenuItem::separator(),
                 #[cfg(target_os = "macos")]
-                MenuItem::action(tr!("Hide OpenLogi"), Hide),
+                MenuItem::action(tr!("Hide NativeLogi"), Hide),
                 #[cfg(target_os = "macos")]
                 MenuItem::action(tr!("Hide Others"), HideOthers),
                 #[cfg(target_os = "macos")]
                 MenuItem::action(tr!("Show All"), ShowAll),
                 #[cfg(target_os = "macos")]
                 MenuItem::separator(),
-                MenuItem::action(tr!("Quit OpenLogi"), Quit),
+                MenuItem::action(tr!("Quit NativeLogi"), Quit),
             ],
         },
         Menu {
@@ -170,7 +170,7 @@ fn menus(cx: &App) -> Vec<Menu> {
             disabled: false,
             items: vec![
                 MenuItem::action(tr!("Settings…"), OpenSettings),
-                MenuItem::action(tr!("About OpenLogi"), OpenAbout),
+                MenuItem::action(tr!("About NativeLogi"), OpenAbout),
                 MenuItem::separator(),
                 MenuItem::action(tr!("Open Configuration Folder"), OpenConfigFolder),
             ],
@@ -196,7 +196,7 @@ fn menus(cx: &App) -> Vec<Menu> {
             name: tr!("Help"),
             disabled: false,
             items: vec![
-                MenuItem::action(tr!("OpenLogi Help"), OpenHelp),
+                MenuItem::action(tr!("NativeLogi Help"), OpenHelp),
                 MenuItem::separator(),
                 MenuItem::action(tr!("Open GitHub Repository"), OpenRepository),
                 MenuItem::action(tr!("Latest Release"), OpenLatestRelease),

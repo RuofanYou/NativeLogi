@@ -191,7 +191,7 @@ pub fn default_labels() -> Vec<Label> {
     ]
 }
 
-/// Logitech's stable slot vocabulary → OpenLogi's `ButtonId`. Intentionally
+/// Logitech's stable slot vocabulary → NativeLogi's `ButtonId`. Intentionally
 /// conservative; unknown names fall through so widening `ButtonId` later
 /// doesn't break old depots.
 fn map_slot_name(name: &str) -> Option<ButtonId> {

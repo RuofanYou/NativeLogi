@@ -6,7 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
-description = "OpenLogi repository maintenance tasks."
+description = "NativeLogi repository maintenance tasks."
 publish = false
 
 [dependencies]

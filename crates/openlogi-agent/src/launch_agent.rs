@@ -1,7 +1,7 @@
 //! macOS `LaunchAgent` reconciliation for the background agent's autostart.
 //!
 //! When `Config::app_settings.launch_at_login` is `true`, a plist at
-//! `~/Library/LaunchAgents/org.openlogi.agent.plist` is kept in sync with the
+//! `~/Library/LaunchAgents/io.github.ruofanyou.nativelogi.agent.plist` is kept in sync with the
 //! running agent executable so the next login relaunches it. `KeepAlive` is
 //! `{SuccessfulExit: false}` — the always-on daemon is respawned after a crash
 //! (the way Logi Options+'s own agent does), but the tray's "Quit" (a clean
@@ -29,7 +29,7 @@ use tracing::{info, warn};
 
 /// Stable launch-agent identifier for the background agent.
 #[cfg(target_os = "macos")]
-const LABEL: &str = "org.openlogi.agent";
+const LABEL: &str = "io.github.ruofanyou.nativelogi.agent";
 
 /// The pre-split GUI autostart label, removed on migration.
 #[cfg(target_os = "macos")]
@@ -74,8 +74,8 @@ fn reconcile_macos(enabled: bool) -> io::Result<()> {
             info!(path = %path.display(), "agent LaunchAgent installed");
         }
         (None, Some(_)) => {
-            std::fs::remove_file(&path)?;
-            info!(path = %path.display(), "agent LaunchAgent removed");
+            move_to_trash(&path)?;
+            info!(path = %path.display(), "agent LaunchAgent moved to Trash");
         }
         (None, None) => debug!("agent LaunchAgent already absent"),
     }
@@ -93,9 +93,9 @@ fn remove_legacy() {
     if !path.exists() {
         return;
     }
-    match std::fs::remove_file(&path) {
-        Ok(()) => info!("removed legacy GUI LaunchAgent ({LEGACY_LABEL})"),
-        Err(e) => warn!(error = %e, "could not remove legacy LaunchAgent"),
+    match move_to_trash(&path) {
+        Ok(()) => info!("moved legacy GUI LaunchAgent to Trash ({LEGACY_LABEL})"),
+        Err(e) => warn!(error = %e, "could not move legacy LaunchAgent to Trash"),
     }
 }
 
@@ -107,6 +107,23 @@ fn plist_path(label: &str) -> io::Result<PathBuf> {
         .join("Library")
         .join("LaunchAgents")
         .join(format!("{label}.plist")))
+}
+
+#[cfg(target_os = "macos")]
+fn move_to_trash(path: &std::path::Path) -> io::Result<()> {
+    let home = std::env::var_os("HOME")
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "$HOME not set"))?;
+    let trash = PathBuf::from(home).join(".Trash");
+    std::fs::create_dir_all(&trash)?;
+    let name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("NativeLogi.plist");
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .unwrap_or(0);
+    std::fs::rename(path, trash.join(format!("NativeLogi-{timestamp}-{name}")))
 }
 
 #[cfg(target_os = "macos")]
@@ -157,7 +174,7 @@ mod tests {
     #[test]
     fn rendered_plist_targets_the_agent_and_keeps_alive() {
         let body = render_plist(
-            "/Applications/OpenLogi.app/Contents/Library/LoginItems/OpenLogiAgent.app/Contents/MacOS/openlogi-agent",
+            "/Applications/NativeLogi.app/Contents/Library/LoginItems/NativeLogiAgent.app/Contents/MacOS/openlogi-agent",
         );
         assert!(body.contains(LABEL));
         assert!(body.contains("openlogi-agent"));
@@ -174,8 +191,8 @@ mod tests {
     fn render_plist_escapes_xml_metacharacters_in_the_path() {
         // A home/app path with XML metacharacters (all legal APFS filename chars)
         // must not produce a malformed plist launchd would reject.
-        let body = render_plist("/Users/R&D/Apps/<OpenLogi>/openlogi-agent");
-        assert!(body.contains("/Users/R&amp;D/Apps/&lt;OpenLogi&gt;/openlogi-agent"));
+        let body = render_plist("/Users/R&D/Apps/<NativeLogi>/openlogi-agent");
+        assert!(body.contains("/Users/R&amp;D/Apps/&lt;NativeLogi&gt;/openlogi-agent"));
         // The raw, unescaped ampersand must not survive into the plist.
         assert!(!body.contains("R&D"));
     }

@@ -1,5 +1,5 @@
 //! Brand constants shared across the workspace: the project's public URLs and
-//! the `openlogi://` deep-link command vocabulary.
+//! the `nativelogi://` deep-link command vocabulary.
 //!
 //! Both live here, in the platform-free core crate, so the agent (which *emits*
 //! tray deep links and renders help links) and the GUI (which *parses* the deep
@@ -7,12 +7,12 @@
 //! command names can't drift across the process boundary, and a repo move
 //! touches one file instead of three.
 
-/// The OpenLogi GitHub repository.
-pub const REPO_URL: &str = "https://github.com/AprilNEA/OpenLogi";
+/// The NativeLogi GitHub repository.
+pub const REPO_URL: &str = "https://github.com/RuofanYou/NativeLogi";
 /// The README, used as the in-app "Help" link.
-pub const HELP_URL: &str = "https://github.com/AprilNEA/OpenLogi#readme";
+pub const HELP_URL: &str = "https://github.com/RuofanYou/NativeLogi#readme";
 /// The "latest release" page.
-pub const RELEASES_URL: &str = "https://github.com/AprilNEA/OpenLogi/releases/latest";
+pub const RELEASES_URL: &str = "https://github.com/RuofanYou/NativeLogi/releases/latest";
 
 /// The release page for a specific version tag (e.g. the running build).
 #[must_use]
@@ -42,8 +42,8 @@ pub enum DeeplinkCommand {
 }
 
 impl DeeplinkCommand {
-    /// The URL scheme OpenLogi registers with LaunchServices.
-    pub const SCHEME: &str = "openlogi";
+    /// The URL scheme NativeLogi registers with LaunchServices.
+    pub const SCHEME: &str = "nativelogi";
 
     /// The wire name for this command — the host component of its URL.
     #[must_use]
@@ -57,13 +57,13 @@ impl DeeplinkCommand {
         }
     }
 
-    /// Build the `openlogi://<name>` URL for this command.
+    /// Build the `nativelogi://<name>` URL for this command.
     #[must_use]
     pub fn to_url(self) -> String {
         format!("{}://{}", Self::SCHEME, self.as_name())
     }
 
-    /// Parse a command from its wire name (the part after `openlogi://`).
+    /// Parse a command from its wire name (the part after `nativelogi://`).
     #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         match name {
@@ -76,9 +76,9 @@ impl DeeplinkCommand {
         }
     }
 
-    /// Parse a full `openlogi://…` URL. The command lives in the URL's host
-    /// component, so any trailing path or query (`openlogi://show/`,
-    /// `openlogi://show?x=1`) is ignored. Returns `None` for a foreign scheme
+    /// Parse a full `nativelogi://…` URL. The command lives in the URL's host
+    /// component, so any trailing path or query (`nativelogi://show/`,
+    /// `nativelogi://show?x=1`) is ignored. Returns `None` for a foreign scheme
     /// or an unknown command.
     #[must_use]
     pub fn parse_url(url: &str) -> Option<Self> {
@@ -110,11 +110,11 @@ mod tests {
     #[test]
     fn parse_url_ignores_trailing_path_and_query() {
         assert_eq!(
-            DeeplinkCommand::parse_url("openlogi://show/"),
+            DeeplinkCommand::parse_url("nativelogi://show/"),
             Some(DeeplinkCommand::Show)
         );
         assert_eq!(
-            DeeplinkCommand::parse_url("openlogi://open-settings?from=tray"),
+            DeeplinkCommand::parse_url("nativelogi://open-settings?from=tray"),
             Some(DeeplinkCommand::OpenSettings)
         );
     }

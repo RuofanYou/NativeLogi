@@ -1,10 +1,10 @@
 //! macOS privacy-permission status for the Settings window.
 //!
-//! OpenLogi needs two real permissions on macOS: **Accessibility** (for the
+//! NativeLogi needs two real permissions on macOS: **Accessibility** (for the
 //! gesture / button hook's event tap) and **Input Monitoring** (to open HID
 //! devices — including Bluetooth-LE-direct mice — through `IOHIDManager`). The
 //! **Bluetooth** (CoreBluetooth) authorization is surfaced for completeness;
-//! note OpenLogi reaches BLE mice via `IOHIDManager`, not CoreBluetooth, so it
+//! note NativeLogi reaches BLE mice via `IOHIDManager`, not CoreBluetooth, so it
 //! usually reads [`PermissionStatus::Unknown`] (not determined).
 //!
 //! Accessibility status is owned by [`crate::state::AppState`] (the

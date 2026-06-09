@@ -83,7 +83,7 @@ in
       exec = "cargo run -p openlogi --release -- assets sync";
     };
     "openlogi:bundle" = {
-      description = "Build OpenLogi.app.";
+      description = "Build NativeLogi.app.";
       exec = ''
         set -e
         ${xcodeEnv}
