@@ -1,0 +1,75 @@
+//! Polling HID inventory watcher.
+//!
+//! Spawns a dedicated OS thread with a one-shot tokio runtime that calls
+//! `openlogi_hid::enumerate` every `period` and forwards the result over an
+//! unbounded mpsc to the GPUI thread. The GUI applies updates via
+//! `AppState::refresh_inventories`.
+//!
+//! Polling beats hot-plug event registration on simplicity: HID transport
+//! crates ship different listener APIs across platforms, and `async-hid 0.4`
+//! does not expose any. A 2 s tick is cheap (one HID enumerate per cycle ≤
+//! a few hundred milliseconds) and matches the human-perceptible reconnect
+//! latency budget in PLAN.md.
+
+use std::thread;
+use std::time::Duration;
+
+use openlogi_core::device::DeviceInventory;
+use tokio::sync::mpsc;
+use tracing::{debug, warn};
+
+/// Spawn the watcher and return a receiver of inventory snapshots. The
+/// channel is unbounded so a slow GUI thread cannot back-pressure the HID
+/// poll loop into stalling on a real device disconnect.
+///
+/// Dropping the receiver shuts the watcher down: the next `send` fails and
+/// the loop exits cleanly.
+pub fn spawn(period: Duration) -> mpsc::UnboundedReceiver<Vec<DeviceInventory>> {
+    let (tx, rx) = mpsc::unbounded_channel();
+    let worker_tx = tx.clone();
+    let spawn_result = thread::Builder::new()
+        .name("openlogi-inventory-watcher".into())
+        .spawn(move || {
+            let rt = match tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+            {
+                Ok(rt) => rt,
+                Err(e) => {
+                    warn!(error = %e, "tokio runtime init failed; watcher exiting");
+                    return;
+                }
+            };
+            // A persistent enumerator so its per-device probe cache survives
+            // across ticks — a known device's immutable data (model, features)
+            // is reused instead of being re-handshaked every poll.
+            let mut enumerator = openlogi_hid::Enumerator::default();
+            loop {
+                match rt.block_on(enumerator.enumerate()) {
+                    Ok(inv) => {
+                        if worker_tx.send(inv).is_err() {
+                            debug!("inventory watcher receiver dropped — exiting");
+                            return;
+                        }
+                    }
+                    // A failed enumerate means "couldn't check", NOT "no devices":
+                    // skip the tick so the agent keeps its last good device set
+                    // and live bindings instead of wiping them for ~one period. A
+                    // genuine disconnect comes back as an `Ok` empty snapshot,
+                    // which we DO forward.
+                    Err(e) => warn!(error = ?e, "enumerate failed during watch tick — keeping last snapshot"),
+                }
+                thread::sleep(period);
+            }
+        });
+    if let Err(e) = spawn_result {
+        // OS thread / fork limits are non-fatal — but startup no longer does a
+        // synchronous enumeration, so the GUI keys its initial "Scanning…"
+        // state off the first snapshot. Emit one empty snapshot here so it
+        // falls through to "No devices connected" instead of showing
+        // "Scanning…" forever; there's just no hot-plug / auto-reconnect.
+        warn!(error = %e, "could not spawn inventory watcher — auto-reconnect disabled");
+        let _ = tx.send(Vec::new());
+    }
+    rx
+}

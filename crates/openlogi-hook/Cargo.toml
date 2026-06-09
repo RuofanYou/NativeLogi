@@ -1,0 +1,41 @@
+[package]
+name = "openlogi-hook"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "OS-level mouse-event hook for OpenLogi. macOS via CGEventTap; Linux via evdev+uinput; Windows is a stub."
+
+[dependencies]
+openlogi-core = { path = "../openlogi-core", version = "0.6.2" }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+evdev = "0.13"
+libc = "0.2"
+x11rb = "0.13"
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+ctrlc = "3"
+
+# CGEventTap stays on core-graphics/core-foundation (the freeze-hazard run-loop
+# machinery). The frontmost-app read uses objc2 (NSWorkspace) so no raw `objc`.
+[target.'cfg(target_os = "macos")'.dependencies]
+core-graphics = { workspace = true }
+core-foundation = { workspace = true }
+objc2 = "0.6.4"
+objc2-foundation = { version = "0.3.2", features = ["NSString"] }
+objc2-app-kit = { version = "0.3.2", features = ["NSWorkspace", "NSRunningApplication"] }
+
+[lints.rust]
+unsafe_code = "allow"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "warn"
+expect_used = "warn"
+missing_errors_doc = "allow"
+doc_markdown = "allow"

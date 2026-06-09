@@ -1,0 +1,92 @@
+[package]
+name = "openlogi"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "OpenLogi command-line interface — a local-first companion for Logitech HID++ peripherals."
+keywords = ["logitech", "hidpp", "hid", "mouse", "cli"]
+categories = ["command-line-utilities", "hardware-support"]
+readme = "README.md"
+
+[dependencies]
+openlogi-cli = { path = "crates/openlogi-cli", version = "0.6.2" }
+anyhow = { workspace = true }
+tokio = { workspace = true, features = ["rt", "macros"] }
+
+[lints]
+workspace = true
+
+[workspace]
+resolver = "3"
+members = [
+    "crates/openlogi-core",
+    "crates/openlogi-hidpp",
+    "crates/openlogi-hid",
+    "crates/openlogi-assets",
+    "crates/openlogi-cli",
+    "crates/openlogi-agent-core",
+    "crates/openlogi-agent",
+    "crates/openlogi-gui",
+    "crates/openlogi-hook",
+    "xtask",
+]
+
+[workspace.package]
+version = "0.6.2"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/AprilNEA/OpenLogi"
+authors = ["AprilNEA <dev@aprilnea.me>"]
+description = "Lightweight, local-first alternative to Logitech Options+ for HID++ devices"
+
+[workspace.dependencies]
+hidpp = { package = "openlogi-hidpp", path = "crates/openlogi-hidpp", version = "0.6.2" }
+async-hid = "0.4"
+tokio = { version = "1", default-features = false, features = ["rt", "macros", "sync", "time"] }
+futures-lite = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+ureq = { version = "3", default-features = false, features = ["rustls", "json"] }
+sha2 = "0.10"
+backon = { version = "1.6", default-features = false, features = ["std", "std-blocking-sleep"] }
+clap = { version = "4", features = ["derive", "env"] }
+anyhow = "1"
+thiserror = "2"
+num_enum = "0.7.3"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "env-filter"] }
+core-graphics = { version = "0.25", default-features = false, features = ["link"] }
+core-foundation = { version = "0.10", default-features = false, features = ["link"] }
+
+# gpui / gpui_platform track zed's default branch, matching how gpui-component
+# declares them (an explicit rev here would fork the git source and conflict).
+# The exact, compatible zed commit is pinned in Cargo.lock instead — bump it
+# deliberately with `cargo update`, in lockstep with the gpui-component rev.
+gpui = { git = "https://github.com/zed-industries/zed" }
+gpui_platform = { git = "https://github.com/zed-industries/zed", features = ["font-kit", "x11", "wayland"] }
+gpui-component = { git = "https://github.com/longbridge/gpui-component", rev = "196b9259b562c26be97c92f88c798bbeefa9cb3d" }
+# Pinned to the same rev as gpui-component: this crate embeds the lucide SVGs
+# that the `IconName` enum is macro-generated from, so the two must agree.
+gpui-component-assets = { git = "https://github.com/longbridge/gpui-component", rev = "196b9259b562c26be97c92f88c798bbeefa9cb3d" }
+
+[workspace.lints.rust]
+# Denied workspace-wide, but `deny` (not `forbid`) so a crate that genuinely
+# needs FFI can opt in locally with `#[expect(unsafe_code, reason = "…")]`.
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "warn"
+expect_used = "warn"
+missing_errors_doc = "allow"
+doc_markdown = "allow"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

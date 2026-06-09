@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  fmt:
+    name: rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  clippy:
+    name: clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libudev-dev \
+            gcc g++ clang libfontconfig-dev libwayland-dev \
+            libxkbcommon-x11-dev libx11-xcb-dev \
+            libssl-dev libzstd-dev pkg-config
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+  check-linux:
+    name: cargo check (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libudev-dev \
+            gcc g++ clang libfontconfig-dev libwayland-dev \
+            libxkbcommon-x11-dev libx11-xcb-dev \
+            libssl-dev libzstd-dev pkg-config
+      - run: cargo check --workspace --all-targets
+
+  # openlogi-core / openlogi-hid / openlogi-assets / openlogi / openlogi-hook
+  # all compile on Linux today (the hook crate has stubs for non-macOS targets).
+  # openlogi-gui needs GPUI's wayland / x11 system libs; the same dependency set
+  # the clippy job installs is sufficient. Test workspace there as well so the
+  # config-roundtrip and binding suites run on a non-macOS host.
+  test-linux:
+    name: tests (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libudev-dev \
+            gcc g++ clang libfontconfig-dev libwayland-dev \
+            libxkbcommon-x11-dev libx11-xcb-dev \
+            libssl-dev libzstd-dev pkg-config
+      - run: cargo test --workspace --exclude openlogi-gui
+
+  test-macos:
+    name: tests (macos, ${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-latest
+          - arch: x86_64
+            runner: macos-15-intel
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Verify runner architecture
+        run: test "$(uname -m)" = "${{ matrix.arch }}"
+      - run: cargo test --workspace --all-targets
+
+  clippy-windows:
+    name: clippy (windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      # openlogi-gui's GPUI backend doesn't build on Windows yet — restrict to
+      # the platform-agnostic crates so the workspace stays green on push. clippy
+      # subsumes `cargo check` and additionally lints the Windows-only code paths
+      # (the WH_MOUSE_LL hook, SendInput synthesis, native HID writer, WinRT
+      # pairing) that the Linux/macOS clippy jobs never compile.
+      - run: cargo clippy -p openlogi-core -p openlogi-hidpp -p openlogi-hid -p openlogi-assets -p openlogi-cli -p openlogi -p openlogi-hook --all-targets -- -D warnings
