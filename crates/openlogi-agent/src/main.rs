@@ -1,4 +1,4 @@
-//! OpenLogi background agent — headless, always-on.
+//! NativeLogi background agent — headless, always-on.
 //!
 //! Owns the CGEventTap hook and the HID++ device path (gesture capture, DPI,
 //! SmartShift), serves the GUI over a Unix-socket tarpc IPC, reconciles its own
@@ -100,6 +100,8 @@ async fn run(config: Config) {
     if !Hook::has_accessibility() {
         Hook::prompt_accessibility();
     }
+    #[cfg(target_os = "macos")]
+    request_input_monitoring();
 
     // The orchestrator is shared with the IPC server (which serves inventory /
     // reload / status) and mutated by the watcher select loop, so it lives
@@ -174,6 +176,27 @@ async fn run(config: Config) {
             }
             else => break,
         }
+    }
+}
+
+#[cfg(target_os = "macos")]
+#[expect(
+    unsafe_code,
+    reason = "IOKit privacy prompt FFI is required to request Input Monitoring for the agent"
+)]
+fn request_input_monitoring() {
+    const REQUEST_TYPE_LISTEN_EVENT: u32 = 1;
+    const ACCESS_GRANTED: u32 = 0;
+
+    #[link(name = "IOKit", kind = "framework")]
+    unsafe extern "C" {
+        fn IOHIDCheckAccess(request_type: u32) -> u32;
+        fn IOHIDRequestAccess(request_type: u32) -> bool;
+    }
+
+    // SAFETY: both calls take the documented IOHIDRequestType discriminant.
+    if unsafe { IOHIDCheckAccess(REQUEST_TYPE_LISTEN_EVENT) } != ACCESS_GRANTED {
+        let _ = unsafe { IOHIDRequestAccess(REQUEST_TYPE_LISTEN_EVENT) };
     }
 }
 
