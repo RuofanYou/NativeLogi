@@ -128,7 +128,6 @@ pub struct AppView {
     /// swaps to the device UI (and back) on hot-plug, without a restart.
     #[allow(dead_code, reason = "held to keep the AppState observer alive")]
     state_obs: Subscription,
-    accessibility_dismissed: bool,
     /// Which section of the device-detail screen is showing.
     active_tab: DetailTab,
 }
@@ -169,7 +168,6 @@ impl AppView {
             lighting_panel,
             appearance_obs: None,
             state_obs,
-            accessibility_dismissed: false,
             active_tab: DetailTab::Buttons,
         }
     }
@@ -209,76 +207,6 @@ impl AppView {
         self.route = Route::Home;
         cx.notify();
     }
-
-    fn accessibility_gate(pal: Palette, cx: &mut Context<Self>) -> AnyElement {
-        v_flex()
-            .size_full()
-            .bg(pal.bg)
-            .text_color(pal.text_primary)
-            .items_center()
-            .justify_center()
-            .gap_4()
-            .p_8()
-            .child(
-                Icon::new(IconName::TriangleAlert)
-                    .size_8()
-                    .text_color(rgb(theme::STATUS_CONNECTING)),
-            )
-            .child(
-                div()
-                    .text_xl()
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .child(tr!("Accessibility permission required")),
-            )
-            .child(
-                div()
-                    .max_w(px(440.))
-                    .text_sm()
-                    .text_color(pal.text_muted)
-                    .child(tr!(
-                        "NativeLogi captures mouse buttons (Back / Forward / gesture button) \
-                         through the system Accessibility permission and runs the actions you \
-                         bind. Features that talk to the device directly — DPI, SmartShift — \
-                         are unaffected."
-                    )),
-            )
-            .child(
-                div()
-                    .id("open-accessibility")
-                    .px_4()
-                    .py_2()
-                    .rounded_md()
-                    .bg(rgb(theme::ACCENT_BLUE))
-                    .text_color(rgb(0x00ff_ffff))
-                    .font_weight(FontWeight::MEDIUM)
-                    .cursor_pointer()
-                    .child(
-                        h_flex()
-                            .gap_2()
-                            .items_center()
-                            .child(Icon::new(IconName::Settings))
-                            .child(tr!("Open System Settings to grant access")),
-                    )
-                    .on_click(|_, _, cx| request_accessibility(cx)),
-            )
-            .child(div().text_xs().text_color(pal.text_muted).child(tr!(
-                "Takes effect automatically once granted — no restart needed."
-            )))
-            .child(
-                div()
-                    .id("skip-accessibility")
-                    .text_xs()
-                    .text_color(pal.text_muted)
-                    .cursor_pointer()
-                    .hover(|s| s.text_color(pal.text_primary))
-                    .child(tr!("Not now (use DPI and other features only)"))
-                    .on_click(cx.listener(|this, _, _, cx| {
-                        this.accessibility_dismissed = true;
-                        cx.notify();
-                    })),
-            )
-            .into_any_element()
-    }
 }
 
 fn request_accessibility(cx: &mut App) {
@@ -308,14 +236,9 @@ impl Render for AppView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let pal = theme::palette(cx);
 
-        let granted = cx
+        let accessibility_granted = cx
             .try_global::<AppState>()
             .is_none_or(|s| s.accessibility_granted);
-        if !granted && !self.accessibility_dismissed {
-            window.set_window_title("NativeLogi");
-            return Self::accessibility_gate(pal, cx);
-        }
-
         let has_device = cx
             .try_global::<AppState>()
             .is_some_and(|s| !s.device_list.is_empty());
@@ -377,7 +300,7 @@ impl Render for AppView {
             .on_action(|_: &Zoom, window, _| window.zoom_window())
             .child(header_el)
             .child(content_el)
-            .child(footer(pal, granted, input_monitoring_granted))
+            .child(footer(pal, accessibility_granted, input_monitoring_granted))
             .into_any_element()
     }
 }
@@ -1288,19 +1211,19 @@ fn permission_status(
     accessibility_granted: bool,
     input_monitoring_granted: bool,
 ) -> AnyElement {
-    if !accessibility_granted {
-        permission_warning(
-            pal,
-            "footer-accessibility",
-            tr!("Accessibility not granted · click to grant"),
-            request_accessibility,
-        )
-    } else if !input_monitoring_granted {
+    if !input_monitoring_granted {
         permission_warning(
             pal,
             "footer-input-monitoring",
             tr!("Input Monitoring not granted · click to grant"),
             request_input_monitoring,
+        )
+    } else if !accessibility_granted {
+        permission_warning(
+            pal,
+            "footer-accessibility",
+            tr!("Accessibility not granted · click to grant"),
+            request_accessibility,
         )
     } else {
         // Reassurance only — kept deliberately quiet: a small dimmed dot and
