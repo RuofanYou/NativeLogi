@@ -91,11 +91,10 @@ async fn run(config: Config) {
     // LaunchAgent, before `config` moves into the orchestrator.
     launch_agent::reconcile(config.app_settings.launch_at_login);
 
-    // Accessibility is optional until the user enables button remapping, so do
-    // not prompt on startup. The Settings window can request it explicitly over
-    // IPC (`request_accessibility_prompt`) when the user asks.
-    #[cfg(target_os = "macos")]
-    request_input_monitoring_prompt();
+    // Permissions are surfaced by the GUI. Do not request Input Monitoring on
+    // startup: local re-signs can make macOS show an enabled switch while TCC
+    // still denies the new binary, and repeating prompts makes that harder to
+    // understand. The GUI asks over IPC only after a user click.
 
     // The orchestrator is shared with the IPC server (which serves inventory /
     // reload / status) and mutated by the watcher select loop, so it lives

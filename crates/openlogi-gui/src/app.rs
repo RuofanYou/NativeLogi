@@ -1156,7 +1156,7 @@ fn device_empty_state(pal: Palette, scanning: bool, input_monitoring_granted: bo
         .into_any_element()
 }
 
-/// Footer status bar: passive state only. Left — the Accessibility-permission
+/// Footer status bar: passive state only. Left — the Input Monitoring
 /// indicator; right — the app version. The former actions (Add Device /
 /// Settings / About) moved to where they belong: Add Device to the device
 /// header's "+", Settings to the right panel's Configuration card and the menu
