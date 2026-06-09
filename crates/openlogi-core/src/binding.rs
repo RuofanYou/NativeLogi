@@ -256,6 +256,10 @@ pub enum Action {
     RightClick,
     /// Middle mouse button (wheel click).
     MiddleClick,
+    /// Native side button 4 / Back.
+    MouseButton4,
+    /// Native side button 5 / Forward.
+    MouseButton5,
 
     // ── Editing ──────────────────────────────────────────────────────────────
     /// Copy the current selection (⌘C / Ctrl+C).
@@ -460,6 +464,8 @@ impl Action {
             Action::LeftClick => "Left Click".into(),
             Action::RightClick => "Right Click".into(),
             Action::MiddleClick => "Middle Click".into(),
+            Action::MouseButton4 => "Mouse Button 4".into(),
+            Action::MouseButton5 => "Mouse Button 5".into(),
             Action::Copy => "Copy".into(),
             Action::Paste => "Paste".into(),
             Action::Cut => "Cut".into(),
@@ -505,7 +511,11 @@ impl Action {
     #[must_use]
     pub fn category(&self) -> Category {
         match self {
-            Action::LeftClick | Action::RightClick | Action::MiddleClick => Category::Mouse,
+            Action::LeftClick
+            | Action::RightClick
+            | Action::MiddleClick
+            | Action::MouseButton4
+            | Action::MouseButton5 => Category::Mouse,
             // CustomShortcut is assigned to Editing so it doesn't need a
             // separate arm (it's not in the picker catalog).
             Action::Copy
@@ -559,6 +569,8 @@ impl Action {
             Action::LeftClick,
             Action::RightClick,
             Action::MiddleClick,
+            Action::MouseButton4,
+            Action::MouseButton5,
             // Editing
             Action::Copy,
             Action::Paste,
@@ -756,6 +768,9 @@ impl Action {
             Action::LeftClick => macos::post_click(CGMouseButton::Left),
             Action::RightClick => macos::post_click(CGMouseButton::Right),
             Action::MiddleClick => macos::post_click(CGMouseButton::Center),
+            // These are native pass-through actions for physical side buttons.
+            // NativeLogi's hook handles Back/Forward before dispatching here.
+            Action::MouseButton4 | Action::MouseButton5 => {}
             // ── Editing ───────────────────────────────────────────────────────
             Action::Copy => macos::post_key(VK_C, cmd),
             Action::Paste => macos::post_key(VK_V, cmd),

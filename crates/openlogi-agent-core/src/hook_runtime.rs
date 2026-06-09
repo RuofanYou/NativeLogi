@@ -85,13 +85,41 @@ pub fn start(
 /// Whether `action` is just `id`'s own native click — i.e. the button is mapped
 /// to the very click it already produces. In that case the hook should pass the
 /// event through to the OS rather than suppress and re-synthesise it.
+///
+/// macOS exposes Logitech side buttons as `OtherMouseDown/Up` button numbers
+/// 3 and 4. Treating the default Back/Forward bindings as native keeps those
+/// physical Mouse4/Mouse5 events visible to games instead of replacing them
+/// with browser-navigation key chords.
 fn is_native_click(id: ButtonId, action: &Action) -> bool {
     matches!(
         (id, action),
         (ButtonId::LeftClick, Action::LeftClick)
             | (ButtonId::RightClick, Action::RightClick)
             | (ButtonId::MiddleClick, Action::MiddleClick)
+            | (ButtonId::Back, Action::BrowserBack)
+            | (ButtonId::Forward, Action::BrowserForward)
+            | (ButtonId::Back, Action::MouseButton4)
+            | (ButtonId::Forward, Action::MouseButton5)
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_side_buttons_pass_through_as_native_mouse_buttons() {
+        assert!(is_native_click(ButtonId::Back, &Action::BrowserBack));
+        assert!(is_native_click(ButtonId::Forward, &Action::BrowserForward));
+        assert!(is_native_click(ButtonId::Back, &Action::MouseButton4));
+        assert!(is_native_click(ButtonId::Forward, &Action::MouseButton5));
+    }
+
+    #[test]
+    fn remapped_side_buttons_are_still_captured() {
+        assert!(!is_native_click(ButtonId::Back, &Action::Copy));
+        assert!(!is_native_click(ButtonId::Forward, &Action::Paste));
+    }
 }
 
 /// Route a bound action either to OS-level event synthesis
