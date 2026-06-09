@@ -257,6 +257,8 @@ fn main() -> Result<()> {
                                 state.scanning = false;
                                 state.accessibility_granted =
                                     update.status.accessibility_granted;
+                                state.input_monitoring_granted =
+                                    update.status.input_monitoring_granted;
                             });
                             cx.refresh_windows();
                         });

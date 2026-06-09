@@ -101,7 +101,7 @@ async fn run(config: Config) {
         Hook::prompt_accessibility();
     }
     #[cfg(target_os = "macos")]
-    request_input_monitoring();
+    request_input_monitoring_prompt();
 
     // The orchestrator is shared with the IPC server (which serves inventory /
     // reload / status) and mutated by the watcher select loop, so it lives
@@ -184,21 +184,43 @@ async fn run(config: Config) {
     unsafe_code,
     reason = "IOKit privacy prompt FFI is required to request Input Monitoring for the agent"
 )]
-fn request_input_monitoring() {
+pub(crate) fn input_monitoring_granted() -> bool {
     const REQUEST_TYPE_LISTEN_EVENT: u32 = 1;
     const ACCESS_GRANTED: u32 = 0;
 
     #[link(name = "IOKit", kind = "framework")]
     unsafe extern "C" {
         fn IOHIDCheckAccess(request_type: u32) -> u32;
+    }
+
+    // SAFETY: `IOHIDCheckAccess` takes the documented IOHIDRequestType discriminant.
+    (unsafe { IOHIDCheckAccess(REQUEST_TYPE_LISTEN_EVENT) }) == ACCESS_GRANTED
+}
+
+#[cfg(not(target_os = "macos"))]
+pub(crate) fn input_monitoring_granted() -> bool {
+    true
+}
+
+#[cfg(target_os = "macos")]
+#[expect(
+    unsafe_code,
+    reason = "IOKit privacy prompt FFI is required to request Input Monitoring for the agent"
+)]
+pub(crate) fn request_input_monitoring_prompt() {
+    const REQUEST_TYPE_LISTEN_EVENT: u32 = 1;
+
+    #[link(name = "IOKit", kind = "framework")]
+    unsafe extern "C" {
         fn IOHIDRequestAccess(request_type: u32) -> bool;
     }
 
-    // SAFETY: both calls take the documented IOHIDRequestType discriminant.
-    if unsafe { IOHIDCheckAccess(REQUEST_TYPE_LISTEN_EVENT) } != ACCESS_GRANTED {
-        let _ = unsafe { IOHIDRequestAccess(REQUEST_TYPE_LISTEN_EVENT) };
-    }
+    // SAFETY: `IOHIDRequestAccess` takes the documented IOHIDRequestType discriminant.
+    let _ = unsafe { IOHIDRequestAccess(REQUEST_TYPE_LISTEN_EVENT) };
 }
+
+#[cfg(not(target_os = "macos"))]
+pub(crate) fn request_input_monitoring_prompt() {}
 
 fn init_tracing() {
     tracing_subscriber::fmt()

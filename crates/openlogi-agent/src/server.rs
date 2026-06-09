@@ -43,6 +43,7 @@ impl Agent for AgentServer {
     async fn status(self, _: Context) -> AgentStatus {
         AgentStatus {
             accessibility_granted: Hook::has_accessibility(),
+            input_monitoring_granted: crate::input_monitoring_granted(),
             hook_installed: self.hook_installed.load(Ordering::Relaxed),
             launch_at_login: self.orchestrator.lock().await.launch_at_login(),
             protocol_version: PROTOCOL_VERSION,
@@ -112,6 +113,10 @@ impl Agent for AgentServer {
 
     async fn request_accessibility_prompt(self, _: Context) {
         Hook::prompt_accessibility();
+    }
+
+    async fn request_input_monitoring_prompt(self, _: Context) {
+        crate::request_input_monitoring_prompt();
     }
 
     async fn start_pairing(self, _: Context, selector: ReceiverSelector) {

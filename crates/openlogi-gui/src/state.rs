@@ -106,6 +106,9 @@ pub struct AppState {
     /// permission gate; flipped by the accessibility watcher when the user
     /// grants access. Always `true` on platforms without the concept.
     pub accessibility_granted: bool,
+    /// Whether the agent holds macOS Input Monitoring permission. Device
+    /// inventory depends on this because the agent owns all HID++ I/O.
+    pub input_monitoring_granted: bool,
     /// Whether the first device enumeration is still in flight. Startup no
     /// longer blocks on enumeration (see `main`); this drives the "Scanning…"
     /// vs "No devices connected" empty state and is cleared once the inventory
@@ -187,6 +190,7 @@ impl AppState {
             // Updated from the agent's IPC `status` poll; the GUI no longer runs
             // the hook, so it can't meaningfully query Accessibility itself.
             accessibility_granted: false,
+            input_monitoring_granted: false,
             scanning: true,
             button_bindings: BTreeMap::new(),
             gesture_bindings: BTreeMap::new(),
@@ -227,6 +231,13 @@ impl AppState {
     /// grant the wrong binary and the hook would never install.
     pub fn request_accessibility_prompt(&self) {
         self.send_ipc(crate::ipc_client::Command::RequestAccessibilityPrompt);
+    }
+
+    /// Ask the agent to fire the macOS Input Monitoring prompt. The agent owns
+    /// HID++ device access, so authorizing the GUI process would not fix
+    /// inventory or device controls.
+    pub fn request_input_monitoring_prompt(&self) {
+        self.send_ipc(crate::ipc_client::Command::RequestInputMonitoringPrompt);
     }
 
     /// Build the button-binding, gesture-binding, and DPI snapshots consumed by

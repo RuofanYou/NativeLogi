@@ -264,7 +264,16 @@ fn permissions_page(pal: Palette) -> SettingPage {
                     tr!("Input Monitoring"),
                     tr!("Needed to read HID++ data, including Bluetooth-direct mice."),
                     Permission::InputMonitoring,
-                    |_| permissions::input_monitoring(),
+                    |cx| {
+                        if cx
+                            .try_global::<AppState>()
+                            .is_some_and(|s| s.input_monitoring_granted)
+                        {
+                            PermissionStatus::Granted
+                        } else {
+                            PermissionStatus::Denied
+                        }
+                    },
                     pal,
                 ))
                 .item(permission_item(
@@ -403,6 +412,11 @@ fn permission_field(
                         && let Some(state) = cx.try_global::<crate::state::AppState>()
                     {
                         state.request_accessibility_prompt();
+                    }
+                    if matches!(permission, Permission::InputMonitoring)
+                        && let Some(state) = cx.try_global::<crate::state::AppState>()
+                    {
+                        state.request_input_monitoring_prompt();
                     }
                     permissions::open_pane(permission);
                 }),

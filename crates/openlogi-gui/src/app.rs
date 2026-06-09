@@ -293,6 +293,17 @@ fn request_accessibility(cx: &mut App) {
     permissions::open_pane(Permission::Accessibility);
 }
 
+fn request_input_monitoring(cx: &mut App) {
+    use crate::platform::permissions::{self, Permission};
+    // The agent owns HID++ I/O, so the native prompt must be fired by the agent
+    // process. Opening the pane gives the user the switch if macOS has already
+    // listed the app.
+    if let Some(state) = cx.try_global::<AppState>() {
+        state.request_input_monitoring_prompt();
+    }
+    permissions::open_pane(Permission::InputMonitoring);
+}
+
 impl Render for AppView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let pal = theme::palette(cx);
@@ -309,6 +320,9 @@ impl Render for AppView {
             .try_global::<AppState>()
             .is_some_and(|s| !s.device_list.is_empty());
         let scanning = cx.try_global::<AppState>().is_some_and(|s| s.scanning);
+        let input_monitoring_granted = cx
+            .try_global::<AppState>()
+            .is_none_or(|s| s.input_monitoring_granted);
 
         // Resolve the route. A detail route lives only while its device is
         // still the live selection; if a hot-plug dropped or reordered it (or
@@ -349,7 +363,7 @@ impl Render for AppView {
                 if has_device {
                     device_gallery(cx).into_any_element()
                 } else {
-                    device_empty_state(pal, scanning)
+                    device_empty_state(pal, scanning, input_monitoring_granted)
                 },
             )
         };
@@ -363,7 +377,7 @@ impl Render for AppView {
             .on_action(|_: &Zoom, window, _| window.zoom_window())
             .child(header_el)
             .child(content_el)
-            .child(footer(pal, granted))
+            .child(footer(pal, granted, input_monitoring_granted))
             .into_any_element()
     }
 }
@@ -1141,7 +1155,7 @@ fn file_url(path: &std::path::Path) -> String {
 /// Body shown when no device is connected. The inventory watcher keeps polling
 /// (every 2 s) and `AppView`'s `AppState` observer swaps the device UI back in
 /// the moment one appears, so this is purely a wait-and-pair placeholder.
-fn device_empty_state(pal: Palette, scanning: bool) -> AnyElement {
+fn device_empty_state(pal: Palette, scanning: bool, input_monitoring_granted: bool) -> AnyElement {
     v_flex()
         .flex_1()
         .w_full()
@@ -1151,15 +1165,25 @@ fn device_empty_state(pal: Palette, scanning: bool) -> AnyElement {
         .gap_4()
         .p_8()
         .child(
-            Icon::new(IconName::Search)
+            Icon::new(if input_monitoring_granted {
+                IconName::Search
+            } else {
+                IconName::TriangleAlert
+            })
                 .size_8()
-                .text_color(pal.text_muted),
+                .text_color(if input_monitoring_granted {
+                    pal.text_muted
+                } else {
+                    rgb(theme::STATUS_CONNECTING).into()
+                }),
         )
         .child(
             div()
                 .text_xl()
                 .font_weight(FontWeight::SEMIBOLD)
-                .child(if scanning {
+                .child(if !input_monitoring_granted {
+                    tr!("Input Monitoring permission required")
+                } else if scanning {
                     tr!("Scanning for devices…")
                 } else {
                     tr!("No devices connected")
@@ -1170,13 +1194,23 @@ fn device_empty_state(pal: Palette, scanning: bool) -> AnyElement {
                 .max_w(px(440.))
                 .text_sm()
                 .text_center()
-                .child(tr!(
-                    "Plug in or pair a supported Logitech device — it'll show up here automatically. For direct Bluetooth connections, pair in your computer's bluetooth settings."
-                )),
+                .child(if input_monitoring_granted {
+                    tr!(
+                        "Plug in or pair a supported Logitech device — it'll show up here automatically. For direct Bluetooth connections, pair in your computer's bluetooth settings."
+                    )
+                } else {
+                    tr!(
+                        "NativeLogi can see your mouse as a normal Bluetooth device, but macOS is blocking HID++ access. Grant Input Monitoring to NativeLogi Agent, then devices will appear automatically."
+                    )
+                }),
         )
         .child(
             div()
-                .id("empty-add-device")
+                .id(if input_monitoring_granted {
+                    "empty-add-device"
+                } else {
+                    "empty-input-monitoring"
+                })
                 .mt_1()
                 .px_4()
                 .py_1()
@@ -1189,10 +1223,24 @@ fn device_empty_state(pal: Palette, scanning: bool) -> AnyElement {
                     h_flex()
                         .gap_2()
                         .items_center()
-                        .child(Icon::new(IconName::Plus))
-                        .child(tr!("Add Device")),
+                        .child(Icon::new(if input_monitoring_granted {
+                            IconName::Plus
+                        } else {
+                            IconName::Settings
+                        }))
+                        .child(if input_monitoring_granted {
+                            tr!("Add Device")
+                        } else {
+                            tr!("Open Input Monitoring Settings")
+                        }),
                 )
-                .on_click(|_, _, cx| crate::windows::add_device::open(cx)),
+                .on_click(move |_, _, cx| {
+                    if input_monitoring_granted {
+                        crate::windows::add_device::open(cx);
+                    } else {
+                        request_input_monitoring(cx);
+                    }
+                }),
         )
         .child(div().mt_1().max_w(px(440.)).text_xs().text_center().text_color(pal.text_muted).child(tr!(
             "Using Logi Options+? Quit it first — both apps compete for HID++ access."
@@ -1206,7 +1254,11 @@ fn device_empty_state(pal: Palette, scanning: bool) -> AnyElement {
 /// header's "+", Settings to the right panel's Configuration card and the menu
 /// bar (⌘,), About to the menu bar. Keeping operations out of here leaves a
 /// genuine status bar — two quiet readouts at the edges, nothing in the middle.
-fn footer(pal: Palette, granted: bool) -> impl IntoElement {
+fn footer(
+    pal: Palette,
+    accessibility_granted: bool,
+    input_monitoring_granted: bool,
+) -> impl IntoElement {
     h_flex()
         .h(px(FOOTER_H))
         .w_full()
@@ -1216,7 +1268,11 @@ fn footer(pal: Palette, granted: bool) -> impl IntoElement {
         .justify_between()
         .border_t_1()
         .border_color(pal.border)
-        .child(accessibility_status(pal, granted))
+        .child(permission_status(
+            pal,
+            accessibility_granted,
+            input_monitoring_granted,
+        ))
         .child(
             div()
                 .text_xs()
@@ -1225,11 +1281,28 @@ fn footer(pal: Palette, granted: bool) -> impl IntoElement {
         )
 }
 
-/// Footer Accessibility-permission indicator. Granted → a muted green-dot
-/// status; not granted → an amber-dot affordance that requests the grant on
-/// click (the native prompt + System Settings, via [`open_accessibility_settings`]).
-fn accessibility_status(pal: Palette, granted: bool) -> AnyElement {
-    if granted {
+/// Footer permission indicator. Show the permission that currently blocks real
+/// use; once both are granted, keep a quiet all-clear.
+fn permission_status(
+    pal: Palette,
+    accessibility_granted: bool,
+    input_monitoring_granted: bool,
+) -> AnyElement {
+    if !accessibility_granted {
+        permission_warning(
+            pal,
+            "footer-accessibility",
+            tr!("Accessibility not granted · click to grant"),
+            request_accessibility,
+        )
+    } else if !input_monitoring_granted {
+        permission_warning(
+            pal,
+            "footer-input-monitoring",
+            tr!("Input Monitoring not granted · click to grant"),
+            request_input_monitoring,
+        )
+    } else {
         // Reassurance only — kept deliberately quiet: a small dimmed dot and
         // muted text that recede until something is actually wrong.
         h_flex()
@@ -1243,28 +1316,33 @@ fn accessibility_status(pal: Palette, granted: bool) -> AnyElement {
                     .rounded_full()
                     .bg(rgb(theme::STATUS_CONNECTED)),
             )
-            .child(div().child(tr!("Accessibility granted")))
-            .into_any_element()
-    } else {
-        // The state that needs attention — full-strength text, an amber dot,
-        // and a click target that requests the grant.
-        h_flex()
-            .id("footer-accessibility")
-            .gap_2()
-            .items_center()
-            .text_xs()
-            .text_color(pal.text_primary)
-            .cursor_pointer()
-            .child(
-                div()
-                    .size_2()
-                    .rounded_full()
-                    .bg(rgb(theme::STATUS_CONNECTING)),
-            )
-            .child(div().child(tr!("Accessibility not granted · click to grant")))
-            .on_click(|_, _, cx| request_accessibility(cx))
+            .child(div().child(tr!("Permissions granted")))
             .into_any_element()
     }
+}
+
+fn permission_warning(
+    pal: Palette,
+    id: &'static str,
+    label: SharedString,
+    action: fn(&mut App),
+) -> AnyElement {
+    h_flex()
+        .id(id)
+        .gap_2()
+        .items_center()
+        .text_xs()
+        .text_color(pal.text_primary)
+        .cursor_pointer()
+        .child(
+            div()
+                .size_2()
+                .rounded_full()
+                .bg(rgb(theme::STATUS_CONNECTING)),
+        )
+        .child(div().child(label))
+        .on_click(move |_, _, cx| action(cx))
+        .into_any_element()
 }
 
 #[cfg(test)]
