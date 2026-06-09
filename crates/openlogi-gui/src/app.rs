@@ -209,18 +209,6 @@ impl AppView {
     }
 }
 
-fn request_accessibility(cx: &mut App) {
-    use crate::platform::permissions::{self, Permission};
-    // Ask the *agent* to fire the prompt (it owns the hook, so the system dialog
-    // must name and authorize openlogi-agent — prompting in the GUI would grant
-    // the wrong binary), then open the System Settings pane so the user can flip
-    // the switch. Shared by the gate button, the footer, and the Settings window.
-    if let Some(state) = cx.try_global::<AppState>() {
-        state.request_accessibility_prompt();
-    }
-    permissions::open_pane(Permission::Accessibility);
-}
-
 fn request_input_monitoring(cx: &mut App) {
     use crate::platform::permissions::{self, Permission};
     // The agent owns HID++ I/O, so the native prompt must be fired by the agent
@@ -236,9 +224,6 @@ impl Render for AppView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let pal = theme::palette(cx);
 
-        let accessibility_granted = cx
-            .try_global::<AppState>()
-            .is_none_or(|s| s.accessibility_granted);
         let has_device = cx
             .try_global::<AppState>()
             .is_some_and(|s| !s.device_list.is_empty());
@@ -300,7 +285,7 @@ impl Render for AppView {
             .on_action(|_: &Zoom, window, _| window.zoom_window())
             .child(header_el)
             .child(content_el)
-            .child(footer(pal, accessibility_granted, input_monitoring_granted))
+            .child(footer(pal, input_monitoring_granted))
             .into_any_element()
     }
 }
@@ -1177,11 +1162,7 @@ fn device_empty_state(pal: Palette, scanning: bool, input_monitoring_granted: bo
 /// header's "+", Settings to the right panel's Configuration card and the menu
 /// bar (⌘,), About to the menu bar. Keeping operations out of here leaves a
 /// genuine status bar — two quiet readouts at the edges, nothing in the middle.
-fn footer(
-    pal: Palette,
-    accessibility_granted: bool,
-    input_monitoring_granted: bool,
-) -> impl IntoElement {
+fn footer(pal: Palette, input_monitoring_granted: bool) -> impl IntoElement {
     h_flex()
         .h(px(FOOTER_H))
         .w_full()
@@ -1191,11 +1172,7 @@ fn footer(
         .justify_between()
         .border_t_1()
         .border_color(pal.border)
-        .child(permission_status(
-            pal,
-            accessibility_granted,
-            input_monitoring_granted,
-        ))
+        .child(permission_status(pal, input_monitoring_granted))
         .child(
             div()
                 .text_xs()
@@ -1204,26 +1181,15 @@ fn footer(
         )
 }
 
-/// Footer permission indicator. Show the permission that currently blocks real
-/// use; once both are granted, keep a quiet all-clear.
-fn permission_status(
-    pal: Palette,
-    accessibility_granted: bool,
-    input_monitoring_granted: bool,
-) -> AnyElement {
+/// Footer permission indicator. Only Input Monitoring blocks device discovery;
+/// Accessibility is a remapping-only capability and lives in Settings.
+fn permission_status(pal: Palette, input_monitoring_granted: bool) -> AnyElement {
     if !input_monitoring_granted {
         permission_warning(
             pal,
             "footer-input-monitoring",
             tr!("Input Monitoring not granted · click to grant"),
             request_input_monitoring,
-        )
-    } else if !accessibility_granted {
-        permission_warning(
-            pal,
-            "footer-accessibility",
-            tr!("Accessibility not granted · click to grant"),
-            request_accessibility,
         )
     } else {
         // Reassurance only — kept deliberately quiet: a small dimmed dot and
