@@ -28,7 +28,7 @@ use openlogi_core::binding::{Action, ButtonId, GestureDirection, default_binding
 use openlogi_core::config::DEFAULT_THUMBWHEEL_SENSITIVITY;
 use openlogi_hid::{CaptureChannel, CapturedInput, DeviceRoute, run_capture_session};
 use tokio::sync::{mpsc, oneshot};
-use tracing::{debug, warn};
+use tracing::{debug, info, warn};
 
 use crate::DpiCycleState;
 use crate::hook_runtime::{self, BindingMap};
@@ -183,6 +183,11 @@ async fn manage(
                 current.clone_from(&want);
                 capture_idle.store(want.is_none(), Ordering::Relaxed);
                 if let Some((route, capture_thumbwheel)) = want {
+                    info!(
+                        ?route,
+                        capture_thumbwheel,
+                        "capture watcher → starting HID++ capture session"
+                    );
                     let (stop_tx, stop_rx) = oneshot::channel();
                     let sink = tx.clone();
                     let slot = Arc::clone(&capture_channel);
@@ -250,10 +255,10 @@ fn dispatch(
                 .ok()
                 .and_then(|guard| guard.get(&direction).cloned());
             if let Some(action) = action {
-                debug!(?direction, action = %action.label(), "gesture → action");
+                info!(?direction, action = %action.label(), "gesture → action");
                 hook_runtime::dispatch_action(&action, dpi_cycle, capture);
             } else {
-                debug!(?direction, "gesture with no binding — ignored");
+                info!(?direction, "gesture with no binding — ignored");
             }
         }
         CapturedInput::ButtonPressed(button) => {
@@ -262,10 +267,10 @@ fn dispatch(
                 .ok()
                 .and_then(|guard| guard.get(&button).cloned());
             if let Some(action) = action {
-                debug!(?button, action = %action.label(), "HID++ button → action");
+                info!(?button, action = %action.label(), "HID++ button → action");
                 hook_runtime::dispatch_action(&action, dpi_cycle, capture);
             } else {
-                debug!(?button, "HID++ button with no binding — ignored");
+                info!(?button, "HID++ button with no binding — ignored");
             }
         }
         CapturedInput::Scroll(rotation) => {

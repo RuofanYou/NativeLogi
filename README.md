@@ -26,6 +26,12 @@ button bindings, and per-app profiles.
 
 ## Project Status
 
+As of October 12, 2026, the maintainer no longer uses Logitech hardware and
+has stopped maintaining NativeLogi. This repository preserves the source,
+local development changes, documentation, and project branding for reference
+and community forks. There is no signed public release or ongoing hardware
+validation. Build artifacts and personal device configuration are not included.
+
 NativeLogi is an early fork based on OpenLogi. The first public goal is a stable
 macOS build for Logitech MX Master users who want native side buttons and basic
 device controls without Logi Options+.
@@ -65,7 +71,9 @@ NativeLogi needs two macOS permissions:
 If the app is rebuilt or re-signed locally, macOS may treat it as a new app and
 require the permissions to be granted again.
 
-## Roadmap
+## Historical Roadmap
+
+The following items remain unfinished and are retained for future forks:
 
 - Package a NativeLogi-branded `.app`.
 - Replace the remaining OpenLogi app names and bundle identifiers.
